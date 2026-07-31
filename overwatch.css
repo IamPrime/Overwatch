@@ -113,7 +113,36 @@ html, body {
     display: block;
     margin: auto;
     max-height: 520px;
-    max-width: 300px;
+    max-width: 90%;
+}
+
+#predictions #concepts img.zoomable {
+    cursor: zoom-in;
+}
+
+.lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    cursor: zoom-out;
+    z-index: 1000;
+    overflow-y: auto;
+    text-align: center;
+    padding: 40px 0;
+    box-sizing: border-box;
+}
+
+.lightbox.open {
+    display: block;
+}
+
+.lightbox img {
+    max-width: 90vw;
+    cursor: zoom-out;
 }
 
 #predictions #concepts .loading {

@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title> Overwatch - Food & Recipe Analysis </title>
+  <meta charset="UTF-8">
+  <meta name="description" content="Food & Recipe Analysis">
+  <meta name="keywords" content="AI, Analysis, Food, Wolfram Alpha">
+  <meta name="author" content="I_am_Prime">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script type="text/javascript" src="https://sdk.clarifai.com/js/clarifai-latest.js"></script>
   <script type="text/javascript" src="overwatch.js"></script>
   <link rel="stylesheet" href="overwatch.css">
   <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed&family=Ubuntu:wght@400&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://s3.amazonaws.com/static.mlh.io/blog-code/2018-02-clarifai-nutrition-app/wolfram.js"></script>
 </head>
 
 <body>
@@ -19,7 +21,7 @@
 
     <form action="#">
       <input type="file" id="filename" placeholder="Filename" size="100"/>
-      <button onclick="predict_click($('#filename').val(), 'file'); return false;">Analyse My Nutrition!!</button>
+      <button type="button" onclick="predict_click($('#filename').val(), 'file'); return false;">Analyse My Nutrition!!</button>
     </form>
 
     <div id="predictions">
@@ -35,7 +37,7 @@
 
   <footer class="footer">
     <div class="powered-by">
-      <p>Inspired by <a href="https://devpost.com/software/munch-emsv0u">Munch</a>.&nbsp;&nbsp;  Powered by &nbsp; <img src="https://f.hubspotusercontent20.net/hubfs/4505120/iso.svg" alt="Clarifai" /> Clarifai</p>
+      <p>Inspired by <a href="https://devpost.com/software/munch-emsv0u">Munch</a>.&nbsp;&nbsp; Nutrition data by Wolfram Alpha.</p>
     </div>
   </footer>
   

@@ -1,14 +1,9 @@
-var myClarifaiApiKey = '867a3f5d742f4b1d8b1eff695d90f5d7';
-var myWolframAppId = 'GAJRVQ-5Q3HAVVAVV';
-
-var app = new Clarifai.App({apiKey: myClarifaiApiKey});
-
 /*
   Purpose: Pass information to other helper functions after a user clicks 'Predict'
   Args:
     value - Actual filename or URL
     source - 'url' or 'file'
-    */
+*/
 function predict_click(value, source) {
   var preview = $(".food-photo");
   var file    = document.querySelector("input[type=file]").files[0];
@@ -18,7 +13,7 @@ function predict_click(value, source) {
   // load local file picture
   reader.addEventListener("load", function () {
     preview.attr('style', 'background-image: url("' + reader.result + '");');
-    doPredict({ base64: reader.result.split("base64,")[1] });
+    doPredict(reader.result.split("base64,")[1]);
   }, false);
 
   if (file) {
@@ -28,20 +23,42 @@ function predict_click(value, source) {
 }
 
 /*
-  Purpose: Does a v2 prediction based on user input
+  Purpose: Sends the photo to our own server, which identifies the food and looks up its nutrition facts
   Args:
-    value - Either {url : urlValue} or { base64 : base64Value }
+    base64 - Base64-encoded image data (no "data:image/...;base64," prefix)
 */
-function doPredict(value) {
-  app.models.predict(Clarifai.FOOD_MODEL, value).then(function(response) {
-      if(response.rawData.outputs[0].data.hasOwnProperty("concepts")) {
-        var tag = response.rawData.outputs[0].data.concepts[0].name;
-        var url = 'http://api.wolframalpha.com/v2/query?input='+tag+'%20nutrition%20facts&appid='+myWolframAppId;
+function doPredict(base64) {
+  $.ajax({
+    url: '/api/detect-food',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({ base64: base64 })
+  }).done(function (result) {
+    var tag = result.tag;
+    var nutritionImageUrl = '/api/nutrition-image?tag=' + encodeURIComponent(tag);
+    $('#concepts').html('<h3>' + tag + '</h3>' + '<img src="' + nutritionImageUrl + '" class="zoomable" title="Click to enlarge">');
+    $('#concepts img').on('click', function () {
+      openLightbox(nutritionImageUrl);
+    });
+  }).fail(function (xhr) {
+    var message = (xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong analyzing your photo.';
+    $('#concepts').html('<p>' + message + '</p>');
+  });
+}
 
-        getNutritionalInfo(url, function (result) {
-          $('#concepts').html('<h3>'+ tag + '</h3>' + "<img src='"+result+"'>");
-        });
-      }
-    }, function(err) { console.log(err); }
-  );
+/*
+  Purpose: Shows a full-size version of the nutrition image in a full-screen overlay.
+  Args:
+    src - URL of the image to display
+*/
+function openLightbox(src) {
+  var lightbox = $('#nutrition-lightbox');
+  if (lightbox.length === 0) {
+    lightbox = $('<div id="nutrition-lightbox" class="lightbox"><img></div>').appendTo('body');
+    lightbox.on('click', function () {
+      lightbox.removeClass('open');
+    });
+  }
+  lightbox.find('img').attr('src', src);
+  lightbox.addClass('open');
 }
