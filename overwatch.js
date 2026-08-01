@@ -1,3 +1,10 @@
+// The backend API always lives on Render, regardless of where this static page is served from
+// (this Node server directly, or a static host like Netlify) - see server.js's CORS config.
+// This is a plain hardcoded value, not an env var: this file is static client-side JS with no
+// build step, served as-is even when copied straight to Netlify, so there's no "process.env" to
+// read here. Update this literal string if the Render URL ever changes.
+var API_BASE = 'https://overwatch-0bic.onrender.com';
+
 /*
   Purpose: Pass information to other helper functions after a user clicks 'Predict'
   Args:
@@ -29,13 +36,13 @@ function predict_click(value, source) {
 */
 function doPredict(base64) {
   $.ajax({
-    url: '/api/detect-food',
+    url: API_BASE + '/api/detect-food',
     method: 'POST',
     contentType: 'application/json',
     data: JSON.stringify({ base64: base64 })
   }).done(function (result) {
     var tag = result.tag;
-    var nutritionImageUrl = '/api/nutrition-image?tag=' + encodeURIComponent(tag);
+    var nutritionImageUrl = API_BASE + '/api/nutrition-image?tag=' + encodeURIComponent(tag);
     $('#concepts').html('<h3>' + tag + '</h3>' + '<img src="' + nutritionImageUrl + '" class="zoomable" title="Click to enlarge">');
     $('#concepts img').on('click', function () {
       openLightbox(nutritionImageUrl);

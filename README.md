@@ -41,11 +41,14 @@ PURDUE_GENAI_MODEL=llama4:latest
 PURDUE_GENAI_FALLBACK_MODEL=gemma4:26b-a4b
 
 WOLFRAM_APP_ID=your-wolfram-alpha-app-id
+
+NETLIFY_ORIGIN=https://grubwatch.netlify.app
 ```
 
 - Get a Purdue GenAI Studio API key by logging into [genai.rcac.purdue.edu](https://genai.rcac.purdue.edu/) with your Purdue SSO, then avatar → Settings → Account → API Keys.
 - Get a Wolfram Alpha App ID from the [Wolfram Alpha Developer Portal](https://developer.wolframalpha.com/). The free tier is capped at **2,000 non-commercial API calls per month** — if nutrition lookups that used to work suddenly start failing, check whether you've hit that monthly quota.
 - To use the self-hosted model instead, set `FOOD_DETECTOR=local` — no Purdue key needed in that case.
+- `NETLIFY_ORIGIN` only matters if you're hosting the front end separately from this server (see Deployment below) — it's the one origin allowed to call this API cross-origin.
 
 ## Running
 
@@ -54,6 +57,20 @@ npm start
 ```
 
 Then open `http://localhost:3000`.
+
+## Deployment
+
+The front end (`index.html`/`overwatch.css`/`overwatch.js`) and the API server (`server.js`) don't have to be hosted together. This repo is set up to run as:
+
+- **API server on [Render](https://render.com)** — free tier, no credit card required. Push this repo, set the env vars from `.env.example` in Render's dashboard, build command `npm install`, start command `npm start`. Render sets its own `PORT` env var automatically; don't override it.
+- **Static front end on [Netlify](https://netlify.com)** (or anywhere else that serves static files) — `overwatch.js` calls the Render API directly via the hardcoded `API_BASE` constant at the top of the file, rather than relative paths, so it works regardless of what origin serves the page. If you redeploy to a different Render URL, update `API_BASE` there.
+- CORS is handled by `NETLIFY_ORIGIN` in `server.js` — set it to your actual static site's URL so the browser allows the cross-origin call.
+
+Why not just proxy `/api/*` through Netlify's redirects instead of calling Render directly? Netlify's redirect/proxy to an external URL times out at ~27 seconds, which is shorter than Render's free-tier cold-start wake time (30-60s after 15 min idle) and shorter than the worst case for the Purdue GenAI primary+fallback chain — so a proxy would fail exactly when you need it most. Calling Render directly removes that ceiling; the browser will wait as long as `server.js` takes.
+
+**Caveat**: Render's free tier spins down after 15 minutes of inactivity. The first request after that will take 30-60s to respond (not fail, just slow) while it wakes back up.
+
+Visiting the Render URL directly (not through Netlify) also works fine — same-origin requests aren't subject to CORS at all, so `NETLIFY_ORIGIN` is irrelevant in that case.
 
 ## Project layout
 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 
 const {
@@ -10,6 +11,7 @@ const {
   PURDUE_GENAI_FALLBACK_MODEL,
   LOCAL_MODEL_ID,
   WOLFRAM_APP_ID,
+  NETLIFY_ORIGIN,
   PORT,
 } = process.env;
 
@@ -19,6 +21,10 @@ const fallbackModel = PURDUE_GENAI_FALLBACK_MODEL || 'gemma4:26b-a4b';
 const localModelId = LOCAL_MODEL_ID || 'onnx-community/swin-finetuned-food101-ONNX';
 
 const app = express();
+// Lets the static front end, when hosted on Netlify (a different origin than this API server),
+// call these routes directly instead of through Netlify's redirect proxy (which times out ~27s -
+// too short for cold starts on Render's free tier plus the vision-model/Wolfram calls below).
+app.use(cors({ origin: NETLIFY_ORIGIN || 'https://grubwatch.netlify.app' }));
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -134,7 +140,10 @@ app.post('/api/detect-food', async (req, res) => {
   }
 });
 
-// Tries one query string against Wolfram Alpha's Simple API. Returns the image buffer + content-type, or null on a clean "didn't understand" response.
+// Tries one query string against Wolfram Alpha's Simple API.
+// Returns { image } on success, or { image: null, isTimeout } on failure - isTimeout distinguishes
+// "Wolfram Alpha ran out of time to compute this" (transient, worth retrying) from a clean
+// "didn't understand this input" response (permanent for that query).
 async function fetchWolframImage(query) {
   const wolframUrl =
     'https://api.wolframalpha.com/v1/simple?' +
@@ -147,6 +156,7 @@ async function fetchWolframImage(query) {
       units: 'imperial',
       width: '800',
       fontsize: '18',
+      timeout: '30',
     });
 
   const wolframResponse = await fetch(wolframUrl);
@@ -154,12 +164,15 @@ async function fetchWolframImage(query) {
   if (!wolframResponse.ok) {
     const message = await wolframResponse.text();
     console.error(`Wolfram Alpha error for "${query}":`, wolframResponse.status, message);
-    return null;
+    return { image: null, isTimeout: /could not give a response in time/i.test(message) };
   }
 
   return {
-    contentType: wolframResponse.headers.get('content-type') || 'image/gif',
-    buffer: Buffer.from(await wolframResponse.arrayBuffer()),
+    image: {
+      contentType: wolframResponse.headers.get('content-type') || 'image/gif',
+      buffer: Buffer.from(await wolframResponse.arrayBuffer()),
+    },
+    isTimeout: false,
   };
 }
 
@@ -179,20 +192,24 @@ app.get('/api/nutrition-image', async (req, res) => {
   }
 
   try {
-    let image = await fetchWolframImage(tag);
+    let result = await fetchWolframImage(tag);
 
     const words = tag.trim().split(/\s+/);
     const simplifiedTag = words[words.length - 1];
-    if (!image && words.length > 1) {
-      image = await fetchWolframImage(simplifiedTag);
+    if (!result.image && words.length > 1) {
+      const fallbackResult = await fetchWolframImage(simplifiedTag);
+      result = { image: fallbackResult.image, isTimeout: result.isTimeout || fallbackResult.isTimeout };
     }
 
-    if (!image) {
+    if (!result.image) {
+      if (result.isTimeout) {
+        return res.status(504).json({ error: 'Wolfram Alpha is taking too long to respond right now - please try again.' });
+      }
       return res.status(502).json({ error: `Wolfram Alpha couldn't find nutrition facts for "${tag}".` });
     }
 
-    res.set('Content-Type', image.contentType);
-    res.send(image.buffer);
+    res.set('Content-Type', result.image.contentType);
+    res.send(result.image.buffer);
   } catch (err) {
     console.error('Wolfram Alpha request failed:', err);
     res.status(502).json({ error: 'Failed to reach Wolfram Alpha.' });
