@@ -9,15 +9,20 @@ const {
   PURDUE_GENAI_API_KEY,
   PURDUE_GENAI_MODEL,
   PURDUE_GENAI_FALLBACK_MODEL,
+  GEMINI_API_KEY,
+  GEMINI_MODEL,
   LOCAL_MODEL_ID,
   WOLFRAM_APP_ID,
   NETLIFY_ORIGIN,
   PORT,
 } = process.env;
 
+// "grubwatch" (default) chains Purdue GenAI Studio -> Gemini's free tier as cloud vision models;
+// "local" runs the Food-101 classifier + translator on this machine instead - see README.
 const useLocalModel = FOOD_DETECTOR === 'local';
 const primaryModel = PURDUE_GENAI_MODEL || 'llama4:latest';
 const fallbackModel = PURDUE_GENAI_FALLBACK_MODEL || 'gemma4:26b-a4b';
+const geminiModel = GEMINI_MODEL || 'gemini-flash-latest';
 const localModelId = LOCAL_MODEL_ID || 'onnx-community/swin-finetuned-food101-ONNX';
 
 const app = express();
@@ -53,17 +58,24 @@ const FOOD_NAME_RULES =
   'in 1-3 words, lowercase, no adjectives, no punctuation, nothing else. Translate non-English dish names ' +
   'to their common English name (e.g. "huevos rancheros" -> "fried eggs") rather than transliterating them.';
 
-// Sends one chat-completion request (content built by the caller) to one Purdue GenAI Studio model.
-async function askPurdueGenAI(model, content) {
+const PURDUE_CHAT_URL = 'https://genai.rcac.purdue.edu/api/chat/completions';
+// Google's OpenAI-compatibility endpoint - takes the same request/response shape (including
+// image_url with a base64 data URI) as Purdue GenAI Studio's API, so it can reuse askVisionModel
+// as-is. See https://ai.google.dev/gemini-api/docs/openai
+const GEMINI_CHAT_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
+// Sends one chat-completion request (content built by the caller) to one OpenAI-compatible
+// vision endpoint (Purdue GenAI Studio or Gemini's OpenAI-compatibility layer).
+async function askVisionModel(baseUrl, apiKey, model, content) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
-    const response = await fetch('https://genai.rcac.purdue.edu/api/chat/completions', {
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${PURDUE_GENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -77,7 +89,7 @@ async function askPurdueGenAI(model, content) {
     const replyText = result?.choices?.[0]?.message?.content;
 
     if (!response.ok || !replyText) {
-      throw new Error(`Purdue GenAI Studio (${model}) error: ${JSON.stringify(result)}`);
+      throw new Error(`${baseUrl} (${model}) error: ${JSON.stringify(result)}`);
     }
 
     return cleanFoodTag(replyText);
@@ -86,25 +98,42 @@ async function askPurdueGenAI(model, content) {
   }
 }
 
-// Tries the primary model, falls back to a second model if the first fails.
-async function askPurdueGenAIWithFallback(content) {
-  if (!PURDUE_GENAI_API_KEY) {
-    throw new Error('PURDUE_GENAI_API_KEY is not configured on the server.');
-  }
-
-  try {
-    return await askPurdueGenAI(primaryModel, content);
-  } catch (err) {
-    console.error(`Primary model (${primaryModel}) failed, trying fallback (${fallbackModel}):`, err.message);
-    return await askPurdueGenAI(fallbackModel, content);
-  }
-}
-
-async function detectFoodViaPurdueGenAI(base64) {
-  return askPurdueGenAIWithFallback([
+// Tries each configured vision model in order (Purdue primary -> Purdue fallback -> Gemini free
+// tier), moving to the next on failure. Gemini is a last resort here specifically because Purdue
+// GenAI Studio has been observed hanging/erroring in production (see README Troubleshooting) -
+// Gemini's free tier gives a working cloud fallback without the RAM/disk cost the `local` detector
+// has on Render's free tier.
+async function detectFoodViaVisionModel(base64) {
+  const content = [
     { type: 'text', text: `Identify the food in this image. ${FOOD_NAME_RULES}` },
     { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
-  ]);
+  ];
+
+  const attempts = [];
+  if (PURDUE_GENAI_API_KEY) {
+    attempts.push(
+      ['Purdue primary', () => askVisionModel(PURDUE_CHAT_URL, PURDUE_GENAI_API_KEY, primaryModel, content)],
+      ['Purdue fallback', () => askVisionModel(PURDUE_CHAT_URL, PURDUE_GENAI_API_KEY, fallbackModel, content)],
+    );
+  }
+  if (GEMINI_API_KEY) {
+    attempts.push(['Gemini', () => askVisionModel(GEMINI_CHAT_URL, GEMINI_API_KEY, geminiModel, content)]);
+  }
+
+  if (!attempts.length) {
+    throw new Error('Neither PURDUE_GENAI_API_KEY nor GEMINI_API_KEY is configured on the server.');
+  }
+
+  let lastError;
+  for (const [label, attempt] of attempts) {
+    try {
+      return await attempt();
+    } catch (err) {
+      console.error(`${label} model failed:`, err.message);
+      lastError = err;
+    }
+  }
+  throw lastError;
 }
 
 // Self-hosted fallback: runs a Food-101 classifier locally, no external API calls.
@@ -166,7 +195,7 @@ app.post('/api/detect-food', async (req, res) => {
   try {
     const tag = useLocalModel
       ? await detectFoodViaLocalModel(base64)
-      : await detectFoodViaPurdueGenAI(base64);
+      : await detectFoodViaVisionModel(base64);
 
     res.json({ tag });
   } catch (err) {
@@ -254,5 +283,5 @@ app.get('/api/nutrition-image', async (req, res) => {
 const port = PORT || 3000;
 app.listen(port, () => {
   console.log(`Overwatch server running at http://localhost:${port}`);
-  console.log(`Food detector: ${useLocalModel ? `local (${localModelId})` : `Purdue GenAI Studio (${primaryModel}, fallback ${fallbackModel})`}`);
+  console.log(`Food detector: ${useLocalModel ? `local (${localModelId})` : `Purdue GenAI Studio (${primaryModel}, fallback ${fallbackModel})${GEMINI_API_KEY ? `, Gemini fallback (${geminiModel})` : ''}`}`);
 });
