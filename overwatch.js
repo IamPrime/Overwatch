@@ -1,9 +1,13 @@
-// The backend API always lives on Render, regardless of where this static page is served from
-// (this Node server directly, or a static host like Netlify) - see server.js's CORS config.
+// When this page is served directly by server.js (locally, or on Render itself), the API lives
+// on the same origin - use relative paths so these calls never leave the browser's same-origin
+// case and don't need CORS at all. Only when this static page is copied to Netlify (a different
+// origin than the API) do we need the absolute Render URL - see server.js's CORS config.
 // This is a plain hardcoded value, not an env var: this file is static client-side JS with no
-// build step, served as-is even when copied straight to Netlify, so there's no "process.env" to
-// read here. Update this literal string if the Render URL ever changes.
-var API_BASE = 'https://overwatch-0bic.onrender.com';
+// build step, so there's no "process.env" to read here. Update this literal string if the
+// Render URL or the Netlify hostname ever changes.
+var API_BASE = (window.location.hostname === 'grubwatch.netlify.app')
+  ? 'https://overwatch-0bic.onrender.com'
+  : '';
 
 /*
   Purpose: Pass information to other helper functions after a user clicks 'Predict'
@@ -46,6 +50,8 @@ function doPredict(base64) {
     $('#concepts').html('<h3>' + tag + '</h3>' + '<img src="' + nutritionImageUrl + '" class="zoomable" title="Click to enlarge">');
     $('#concepts img').on('click', function () {
       openLightbox(nutritionImageUrl);
+    }).on('error', function () {
+      $(this).replaceWith('<p>Sorry, we could not find nutrition facts for "' + tag + '".</p>');
     });
   }).fail(function (xhr) {
     var message = (xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong analyzing your photo.';

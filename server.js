@@ -44,8 +44,17 @@ function cleanFoodTag(text) {
     .join(' ');
 }
 
-// Asks one Purdue GenAI Studio vision model what food is in the photo.
-async function askPurdueGenAI(model, base64) {
+// Shared naming rule for every path that produces a food tag (vision ID or translating a raw
+// classifier label) - Wolfram Alpha's Simple API is English-only, so any non-English dish name
+// (e.g. from a foreign-language vision reply, or a Food-101 label like "huevos_rancheros") needs
+// this same rule applied before it reaches Wolfram.
+const FOOD_NAME_RULES =
+  'Respond with only its common, generic name in English (e.g. "pizza", "cheeseburger", "caesar salad") ' +
+  'in 1-3 words, lowercase, no adjectives, no punctuation, nothing else. Translate non-English dish names ' +
+  'to their common English name (e.g. "huevos rancheros" -> "fried eggs") rather than transliterating them.';
+
+// Sends one chat-completion request (content built by the caller) to one Purdue GenAI Studio model.
+async function askPurdueGenAI(model, content) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
 
@@ -59,44 +68,43 @@ async function askPurdueGenAI(model, base64) {
       body: JSON.stringify({
         model,
         stream: false,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: "Identify the food in this image. Respond with only its common, generic name (e.g. \"pizza\", \"cheeseburger\", \"caesar salad\") in 1-3 words, lowercase, no adjectives, no punctuation, nothing else." },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
-            ],
-          },
-        ],
+        messages: [{ role: 'user', content }],
       }),
       signal: controller.signal,
     });
 
     const result = await response.json();
-    const content = result?.choices?.[0]?.message?.content;
+    const replyText = result?.choices?.[0]?.message?.content;
 
-    if (!response.ok || !content) {
+    if (!response.ok || !replyText) {
       throw new Error(`Purdue GenAI Studio (${model}) error: ${JSON.stringify(result)}`);
     }
 
-    return cleanFoodTag(content);
+    return cleanFoodTag(replyText);
   } finally {
     clearTimeout(timeout);
   }
 }
 
-// Tries the primary vision model, falls back to a second model if the first fails.
-async function detectFoodViaPurdueGenAI(base64) {
+// Tries the primary model, falls back to a second model if the first fails.
+async function askPurdueGenAIWithFallback(content) {
   if (!PURDUE_GENAI_API_KEY) {
     throw new Error('PURDUE_GENAI_API_KEY is not configured on the server.');
   }
 
   try {
-    return await askPurdueGenAI(primaryModel, base64);
+    return await askPurdueGenAI(primaryModel, content);
   } catch (err) {
     console.error(`Primary model (${primaryModel}) failed, trying fallback (${fallbackModel}):`, err.message);
-    return await askPurdueGenAI(fallbackModel, base64);
+    return await askPurdueGenAI(fallbackModel, content);
   }
+}
+
+async function detectFoodViaPurdueGenAI(base64) {
+  return askPurdueGenAIWithFallback([
+    { type: 'text', text: `Identify the food in this image. ${FOOD_NAME_RULES}` },
+    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
+  ]);
 }
 
 // Self-hosted fallback: runs a Food-101 classifier locally, no external API calls.
@@ -109,6 +117,33 @@ function getLocalClassifier() {
   return classifierPromise;
 }
 
+// Small local instruct model used only to clean up/translate the local classifier's raw label
+// (see translateFoodNameToEnglish below). Kept separate from the local classifier itself so the
+// `local` detector path never calls out to Purdue GenAI Studio for anything, image ID or
+// translation - the whole point of `local` is to keep working when Purdue is down.
+let translatorPromise;
+function getLocalTranslator() {
+  if (!translatorPromise) {
+    const { pipeline } = require('@huggingface/transformers');
+    translatorPromise = pipeline('text-generation', 'onnx-community/Qwen2.5-1.5B-Instruct', { dtype: 'q4' });
+  }
+  return translatorPromise;
+}
+
+// Food-101's labels are a fixed set of English-annotated but not always English-*named* dishes
+// (e.g. "huevos_rancheros", "croque_madame") - Wolfram Alpha doesn't recognize those, so run the
+// raw label through the same translate-to-English rule used for the vision path above, via the
+// small local instruct model rather than Purdue GenAI Studio.
+async function translateFoodNameToEnglish(rawName) {
+  const generator = await getLocalTranslator();
+  const messages = [{ role: 'user', content: `The food is called "${rawName}". ${FOOD_NAME_RULES}` }];
+  const output = await generator(messages, { max_new_tokens: 20, do_sample: false });
+  const reply = output[0]?.generated_text;
+  const replyText = Array.isArray(reply) ? reply[reply.length - 1]?.content : reply;
+
+  return replyText ? cleanFoodTag(replyText) : rawName;
+}
+
 async function detectFoodViaLocalModel(base64) {
   const classifier = await getLocalClassifier();
   const image = new Blob([Buffer.from(base64, 'base64')], { type: 'image/jpeg' });
@@ -119,7 +154,7 @@ async function detectFoodViaLocalModel(base64) {
     throw new Error('Local model returned no classification.');
   }
 
-  return topLabel.replace(/_/g, ' ');
+  return translateFoodNameToEnglish(topLabel.replace(/_/g, ' '));
 }
 
 app.post('/api/detect-food', async (req, res) => {
