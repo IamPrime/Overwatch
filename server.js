@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const {
   FOOD_DETECTOR,
@@ -13,9 +14,46 @@ const {
   GEMINI_MODEL,
   LOCAL_MODEL_ID,
   WOLFRAM_APP_ID,
+  WOLFRAM_DAILY_FREE_LOOKUPS,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
   NETLIFY_ORIGIN,
   PORT,
 } = process.env;
+
+const DAILY_FREE_LOOKUPS = Number(WOLFRAM_DAILY_FREE_LOOKUPS) || 5;
+
+// Service-role client: bypasses RLS, so it must only ever live server-side. Used to
+// verify user JWTs from the front end and to read/write the per-user Wolfram tables.
+const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : null;
+
+// Verifies the "Authorization: Bearer <supabase-jwt>" header the front end sends on
+// every API call (both real logins and anonymous device sessions produce one), and
+// attaches the resolved user to req.user. Every route below needs a caller identity -
+// either to look up their BYOK Wolfram key/usage, or (for detect-food) simply so an
+// anonymous script can't hit the shared Purdue/Gemini keys without ever going through
+// the app's own sign-up/anonymous-session flow.
+async function requireAuth(req, res, next) {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Supabase credentials are not configured on the server.' });
+  }
+
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) {
+    return res.status(401).json({ error: 'Missing Authorization header.' });
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data?.user) {
+    return res.status(401).json({ error: 'Invalid or expired session.' });
+  }
+
+  req.user = data.user;
+  next();
+}
 
 // "grubwatch" (default) chains Purdue GenAI Studio -> Gemini's free tier as cloud vision models;
 // "local" runs the Food-101 classifier + translator on this machine instead - see README.
@@ -32,9 +70,13 @@ const app = express();
 app.use(cors({ origin: NETLIFY_ORIGIN || 'https://grubwatch.netlify.app' }));
 app.use(express.json({ limit: '10mb' }));
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/overwatch.css', (req, res) => res.sendFile(path.join(__dirname, 'overwatch.css')));
-app.get('/overwatch.js', (req, res) => res.sendFile(path.join(__dirname, 'overwatch.js')));
+// Serves the built Vite frontend (frontend/dist) so visiting the Render URL directly still
+// works, not just the Netlify deployment - see README's "Deployment" section. Static routes
+// for the old hand-written index.html/overwatch.css/overwatch.js are gone now that the
+// frontend is a Vite build; run `npm run build` in frontend/ before starting this server.
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+// Sample food photos, unrelated to the built frontend's own overwatch-images/ (PWA icons) -
+// falls through here only when the static frontend above doesn't have a matching file.
 app.use('/overwatch-images', express.static(path.join(__dirname, 'overwatch-images')));
 
 function cleanFoodTag(text) {
@@ -186,7 +228,7 @@ async function detectFoodViaLocalModel(base64) {
   return translateFoodNameToEnglish(topLabel.replace(/_/g, ' '));
 }
 
-app.post('/api/detect-food', async (req, res) => {
+app.post('/api/detect-food', requireAuth, async (req, res) => {
   const { base64 } = req.body;
   if (!base64) {
     return res.status(400).json({ error: 'Missing "base64" image data.' });
@@ -208,11 +250,13 @@ app.post('/api/detect-food', async (req, res) => {
 // Returns { image } on success, or { image: null, isTimeout } on failure - isTimeout distinguishes
 // "Wolfram Alpha ran out of time to compute this" (transient, worth retrying) from a clean
 // "didn't understand this input" response (permanent for that query).
-async function fetchWolframImage(query) {
+// Takes the App ID as a parameter (rather than reading WOLFRAM_APP_ID directly) because the
+// caller resolves per-request whether to use the shared capped key or the user's own BYOK key.
+async function fetchWolframImage(query, appId) {
   const wolframUrl =
     'https://api.wolframalpha.com/v1/simple?' +
     new URLSearchParams({
-      appid: WOLFRAM_APP_ID,
+      appid: appId,
       i: query,
       background: 'F6F6F6',
       foreground: 'black',
@@ -246,38 +290,179 @@ async function fetchWolframImage(query) {
 // dish names (e.g. "sandwich nutrition facts" 501s, but "sandwich" alone works fine).
 // Falls back to just the last word of the tag (usually the core noun, e.g. "margherita pizza" -> "pizza")
 // in case the full multi-word tag itself isn't recognized as an entity.
-app.get('/api/nutrition-image', async (req, res) => {
+//
+// Every caller gets DAILY_FREE_LOOKUPS lookups/day against the shared WOLFRAM_APP_ID. A user who
+// has saved their own Wolfram App ID (see /api/wolfram-key below) uses that key instead, uncapped,
+// and never touches the shared daily counter at all.
+app.get('/api/nutrition-image', requireAuth, async (req, res) => {
   const { tag } = req.query;
   if (!tag) {
     return res.status(400).json({ error: 'Missing "tag" query parameter.' });
   }
-  if (!WOLFRAM_APP_ID) {
-    return res.status(500).json({ error: 'Wolfram Alpha credentials are not configured on the server.' });
+
+  const userId = req.user.id;
+  let appId;
+  let usageInfo = null;
+
+  try {
+    const { data: byok, error: byokError } = await supabaseAdmin
+      .from('user_wolfram_keys')
+      .select('wolfram_app_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (byokError) throw byokError;
+
+    if (byok?.wolfram_app_id) {
+      appId = byok.wolfram_app_id;
+    } else {
+      if (!WOLFRAM_APP_ID) {
+        return res.status(500).json({ error: 'Wolfram Alpha credentials are not configured on the server.' });
+      }
+
+      // Charge-on-attempt (before calling Wolfram) so the cap can't be raced around the
+      // external call itself; a best-effort refund happens below if Wolfram hard-fails.
+      const { data: rows, error: rpcError } = await supabaseAdmin.rpc('increment_wolfram_usage', {
+        p_user_id: userId,
+        p_daily_limit: DAILY_FREE_LOOKUPS,
+      });
+      if (rpcError) throw rpcError;
+
+      const { new_count: newCount, allowed } = rows[0];
+      if (!allowed) {
+        return res.status(429).json({
+          error: `You've used all ${DAILY_FREE_LOOKUPS} free nutrition lookups for today. Add your own free Wolfram Alpha App ID in Settings to keep going.`,
+          used: newCount,
+          limit: DAILY_FREE_LOOKUPS,
+        });
+      }
+
+      appId = WOLFRAM_APP_ID;
+      usageInfo = { used: newCount, limit: DAILY_FREE_LOOKUPS };
+    }
+  } catch (err) {
+    console.error('Failed to resolve Wolfram App ID / usage:', err);
+    return res.status(500).json({ error: 'Could not verify your Wolfram Alpha usage right now.' });
   }
 
   try {
-    let result = await fetchWolframImage(tag);
+    let result = await fetchWolframImage(tag, appId);
 
     const words = tag.trim().split(/\s+/);
     const simplifiedTag = words[words.length - 1];
     if (!result.image && words.length > 1) {
-      const fallbackResult = await fetchWolframImage(simplifiedTag);
+      const fallbackResult = await fetchWolframImage(simplifiedTag, appId);
       result = { image: fallbackResult.image, isTimeout: result.isTimeout || fallbackResult.isTimeout };
     }
 
     if (!result.image) {
+      if (usageInfo) {
+        // Best-effort refund: both attempts hard-failed, so this charged lookup never
+        // actually got the user a nutrition image.
+        await supabaseAdmin.rpc('decrement_wolfram_usage', { p_user_id: userId });
+      }
       if (result.isTimeout) {
         return res.status(504).json({ error: 'Wolfram Alpha is taking too long to respond right now - please try again.' });
       }
       return res.status(502).json({ error: `Wolfram Alpha couldn't find nutrition facts for "${tag}".` });
     }
 
+    if (usageInfo) {
+      res.set('X-Wolfram-Usage-Used', String(usageInfo.used));
+      res.set('X-Wolfram-Usage-Limit', String(usageInfo.limit));
+    }
     res.set('Content-Type', result.image.contentType);
     res.send(result.image.buffer);
   } catch (err) {
     console.error('Wolfram Alpha request failed:', err);
     res.status(502).json({ error: 'Failed to reach Wolfram Alpha.' });
   }
+});
+
+// Reports whether the caller has their own Wolfram App ID saved, and (if not) how many of
+// today's free shared-key lookups remain.
+app.get('/api/wolfram-usage', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const today = new Date().toISOString().slice(0, 10); // UTC date, matches increment_wolfram_usage's (now() at time zone 'utc')::date
+
+  try {
+    const [{ data: byok, error: byokError }, { data: usageRow, error: usageError }] = await Promise.all([
+      supabaseAdmin.from('user_wolfram_keys').select('wolfram_app_id').eq('user_id', userId).maybeSingle(),
+      supabaseAdmin.from('wolfram_usage').select('lookup_count').eq('user_id', userId).eq('usage_date', today).maybeSingle(),
+    ]);
+    if (byokError) throw byokError;
+    if (usageError) throw usageError;
+
+    const hasOwnKey = !!byok?.wolfram_app_id;
+    const used = usageRow?.lookup_count || 0;
+
+    res.json({
+      hasOwnKey,
+      used: hasOwnKey ? null : used,
+      limit: hasOwnKey ? null : DAILY_FREE_LOOKUPS,
+      remaining: hasOwnKey ? null : Math.max(DAILY_FREE_LOOKUPS - used, 0),
+    });
+  } catch (err) {
+    console.error('Failed to fetch Wolfram usage:', err);
+    res.status(500).json({ error: 'Could not fetch your Wolfram Alpha usage right now.' });
+  }
+});
+
+// Confirms a submitted App ID actually works before persisting it, via Wolfram's lightweight
+// validate-query endpoint - using the Simple API here would burn part of the user's own free
+// monthly quota just to test a string.
+async function validateWolframAppId(appId) {
+  try {
+    const url = 'https://api.wolframalpha.com/v2/validatequery?' + new URLSearchParams({
+      appid: appId,
+      input: 'pizza',
+      output: 'json',
+    });
+    const response = await fetch(url);
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    return data?.queryresult?.success === true && !data?.queryresult?.error;
+  } catch (err) {
+    console.error('Wolfram App ID validation failed:', err);
+    return false;
+  }
+}
+
+app.post('/api/wolfram-key', requireAuth, async (req, res) => {
+  const appId = (req.body?.appId || '').trim();
+  if (!appId) {
+    return res.status(400).json({ error: 'Missing "appId".' });
+  }
+
+  if (!(await validateWolframAppId(appId))) {
+    return res.status(400).json({ error: "That Wolfram Alpha App ID doesn't seem to work. Double check it and try again." });
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin.from('user_wolfram_keys').upsert({
+    user_id: req.user.id,
+    wolfram_app_id: appId,
+    verified_at: now,
+    updated_at: now,
+  });
+
+  if (error) {
+    console.error('Failed to save Wolfram App ID:', error);
+    return res.status(500).json({ error: 'Could not save your Wolfram Alpha App ID.' });
+  }
+
+  res.json({ ok: true });
+});
+
+app.delete('/api/wolfram-key', requireAuth, async (req, res) => {
+  const { error } = await supabaseAdmin.from('user_wolfram_keys').delete().eq('user_id', req.user.id);
+
+  if (error) {
+    console.error('Failed to remove Wolfram App ID:', error);
+    return res.status(500).json({ error: 'Could not remove your Wolfram Alpha App ID.' });
+  }
+
+  res.json({ ok: true });
 });
 
 const port = PORT || 3000;
