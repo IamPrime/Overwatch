@@ -56,7 +56,7 @@ export async function getWolframUsage(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, 'Could not fetch your Wolfram Alpha usage.'));
+    throw new Error(await readErrorMessage(response, 'Could not fetch your Overwatch usage.'));
   }
   return response.json(); // { hasOwnKey, used, limit, remaining }
 }

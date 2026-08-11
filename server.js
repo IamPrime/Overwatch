@@ -316,7 +316,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
       appId = byok.wolfram_app_id;
     } else {
       if (!WOLFRAM_APP_ID) {
-        return res.status(500).json({ error: 'Wolfram Alpha credentials are not configured on the server.' });
+        return res.status(500).json({ error: "Overwatch's nutrition lookup isn't configured on the server." });
       }
 
       // Charge-on-attempt (before calling Wolfram) so the cap can't be raced around the
@@ -341,7 +341,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
     }
   } catch (err) {
     console.error('Failed to resolve Wolfram App ID / usage:', err);
-    return res.status(500).json({ error: 'Could not verify your Wolfram Alpha usage right now.' });
+    return res.status(500).json({ error: 'Could not verify your Overwatch usage right now.' });
   }
 
   try {
@@ -361,9 +361,9 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
         await supabaseAdmin.rpc('decrement_wolfram_usage', { p_user_id: userId });
       }
       if (result.isTimeout) {
-        return res.status(504).json({ error: 'Wolfram Alpha is taking too long to respond right now - please try again.' });
+        return res.status(504).json({ error: 'Overwatch is taking too long to respond right now - please try again.' });
       }
-      return res.status(502).json({ error: `Wolfram Alpha couldn't find nutrition facts for "${tag}".` });
+      return res.status(502).json({ error: `Overwatch couldn't find nutrition facts for "${tag}".` });
     }
 
     if (usageInfo) {
@@ -374,7 +374,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
     res.send(result.image.buffer);
   } catch (err) {
     console.error('Wolfram Alpha request failed:', err);
-    res.status(502).json({ error: 'Failed to reach Wolfram Alpha.' });
+    res.status(502).json({ error: "Failed to reach Overwatch's nutrition lookup service." });
   }
 });
 
@@ -403,7 +403,7 @@ app.get('/api/wolfram-usage', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('Failed to fetch Wolfram usage:', err);
-    res.status(500).json({ error: 'Could not fetch your Wolfram Alpha usage right now.' });
+    res.status(500).json({ error: 'Could not fetch your Overwatch usage right now.' });
   }
 });
 
