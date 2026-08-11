@@ -2,3 +2,9 @@
   base = "frontend"
   command = "npm run build"
   publish = "dist"
+
+[build.environment]
+  # Vite 8 needs a modern Node - Netlify's default (18.x) is EOL and likely below Vite's
+  # minimum supported version. Pinned here (rather than only in the dashboard) so it's
+  # version-controlled and consistent across environments.
+  NODE_VERSION = "24"

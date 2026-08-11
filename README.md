@@ -116,7 +116,8 @@ Then open the URL Vite prints (typically `http://localhost:5173`). The frontend'
 
 The front end (`frontend/`) and the API server (`server.js`) don't have to be hosted together. This repo is set up to run as:
 
-- **API server on [Render](https://render.com)** — free tier, no credit card required. Push this repo, set the env vars from `.env.example` in Render's dashboard, build command `npm install`, start command `npm start`. Render sets its own `PORT` env var automatically; don't override it.
+- **API server on [Render](https://render.com)** — free tier, no credit card required. Push this repo, set the env vars from `.env.example` in Render's dashboard, build command `npm install && npm run build` (the root `build` script also builds `frontend/`, so `server.js` has something in `frontend/dist` to serve — see "Visiting the Render URL directly" below), start command `npm start`. Render sets its own `PORT` env var automatically; don't override it.
+  - This build also needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set in Render's Environment tab (same values as Netlify's, below) — Vite bakes them into the built JS at build time same as it does for Netlify. Deliberately do **not** set `VITE_API_BASE` here: left unset, it defaults to an empty string, giving relative `/api/*` paths that resolve same-origin when the Render URL serves both the API and this build of the frontend - exactly what's needed for a direct-Render-URL visit, as opposed to Netlify's build, which needs `VITE_API_BASE` pointed at this Render URL since it's a different origin there.
 - **Static front end on [Netlify](https://netlify.com)** (or anywhere else that serves static files) — [`netlify.toml`](netlify.toml) at the repo root tells Netlify to build from the `frontend/` directory (`base = "frontend"`, `command = "npm run build"`, `publish = "dist"`). Set `VITE_API_BASE`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` as Netlify build environment variables (Site settings → Environment variables) — since there's no server at runtime to inject them, Vite bakes them into the built JS at build time. If you redeploy `server.js` to a different Render URL, update `VITE_API_BASE` and redeploy the frontend.
 - CORS is handled by `NETLIFY_ORIGIN` in `server.js` — set it to your actual static site's URL so the browser allows the cross-origin call.
 
@@ -124,7 +125,7 @@ Why not just proxy `/api/*` through Netlify's redirects instead of calling Rende
 
 **Caveat**: Render's free tier spins down after 15 minutes of inactivity. The first request after that will take 30-60s to respond (not fail, just slow) while it wakes back up.
 
-Visiting the Render URL directly (not through Netlify) also works fine: `server.js` serves the built `frontend/dist` itself (run `npm run build` in `frontend/` first), and same-origin requests aren't subject to CORS at all, so `NETLIFY_ORIGIN` is irrelevant in that case.
+Visiting the Render URL directly (not through Netlify) also works: Render's build command builds `frontend/dist` as part of deploying (see above), which `server.js` serves directly, and same-origin requests aren't subject to CORS at all, so `NETLIFY_ORIGIN` is irrelevant in that case. For local testing of this specific path, run `npm run build` at the repo root (not inside `frontend/`) to match what Render does.
 
 ## Project layout
 
