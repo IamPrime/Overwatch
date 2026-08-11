@@ -78,9 +78,53 @@ html, body {
     text-decoration: underline;
 }
 
-.auth-divider {
-    color: orange;
-    margin: 1rem 0;
+.password-field {
+    position: relative;
+    margin: 1rem auto;
+    width: 100%;
+    max-width: 400px;
+}
+
+.wrapper form .password-field input {
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    padding-right: 2.75rem;
+    box-sizing: border-box;
+}
+
+/* Needs to out-specificity ".wrapper form button" (which styles the Sign in/Sign up
+   button as a full-width block) - a bare class alone loses to that descendant selector. */
+.wrapper form button.password-toggle {
+    display: flex;
+    background: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+    width: 1.75rem;
+    max-width: none;
+    font-weight: normal;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: none;
+    border: none;
+    color: darkslateblue;
+    cursor: pointer;
+    padding: 0;
+}
+
+.password-toggle:hover {
+    color: goldenrod;
 }
 
 .auth-error {
