@@ -11,12 +11,16 @@
 
 ## How it works
 
-1. You upload a photo of food in the browser.
-2. The browser sends the photo to a small local server ([server.js](server.js)).
+1. You sign in (or, if you've installed the app to your phone's home screen, it signs you in anonymously with no password) and upload a photo of food in the browser.
+2. The browser sends the photo to a small local server ([server.js](server.js)), with your session token attached.
 3. The server identifies the food (see "Food detection backends" below), then calls the **Wolfram Alpha** Simple API to get a nutrition-facts image for that food.
 4. The nutrition image is displayed on the page — click it to view a larger, scrollable version.
 
 The API calls happen server-side (not in the browser) so credentials never need to be exposed in client-side JavaScript, and because Wolfram Alpha's API doesn't support being called directly from a browser (no CORS headers) anyway.
+
+### Accounts & Wolfram Alpha usage
+
+Accounts (email/password on the web, no-password anonymous sessions in the installed PWA) are handled by [Supabase](https://supabase.com/) Auth — see "Supabase setup" below. Every signed-in user gets **5 free nutrition lookups/day** against the app's own shared `WOLFRAM_APP_ID`. If you add your own free Wolfram Alpha App ID in the app's Settings panel, your lookups use your own key instead and are uncapped — you stop drawing from the shared quota entirely. There's no payment or paid tier: bringing your own (free) Wolfram Alpha key is the entire "upgrade path."
 
 ### Food detection backends
 
@@ -47,44 +51,87 @@ GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-flash-latest
 
 WOLFRAM_APP_ID=your-wolfram-alpha-app-id
+WOLFRAM_DAILY_FREE_LOOKUPS=5
+
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
 NETLIFY_ORIGIN=https://grubwatch.netlify.app
 ```
 
 - Get a Purdue GenAI Studio API key by logging into [genai.rcac.purdue.edu](https://genai.rcac.purdue.edu/) with your Purdue SSO, then avatar → Settings → Account → API Keys.
 - `GEMINI_API_KEY` is optional but recommended in production: get a free key (no credit card) from [Google AI Studio](https://aistudio.google.com/) → Get API Key. Used only if both Purdue models fail.
-- Get a Wolfram Alpha App ID from the [Wolfram Alpha Developer Portal](https://developer.wolframalpha.com/). The free tier is capped at **2,000 non-commercial API calls per month** — if nutrition lookups that used to work suddenly start failing, check whether you've hit that monthly quota.
+- Get a Wolfram Alpha App ID from the [Wolfram Alpha Developer Portal](https://developer.wolframalpha.com/) for `WOLFRAM_APP_ID` — this is the *shared* key every signed-in user's free 5 lookups/day draw from (see "Accounts & Wolfram Alpha usage" above). The free tier is capped at **2,000 non-commercial API calls per month** — if free-tier lookups that used to work suddenly start failing for everyone, check whether you've hit that monthly quota. `WOLFRAM_DAILY_FREE_LOOKUPS` is optional and defaults to 5.
+- `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are required for accounts — see "Supabase setup" below. `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security; never expose it to the frontend or commit it.
 - To use the self-hosted model instead, set `FOOD_DETECTOR=local` — no Purdue/Gemini key needed in that case. **Not recommended on Render's free tier**: the local classifier plus its translator model need more RAM than the free tier's ~512MB gives, and its ephemeral disk means both models (~1.1-1.5GB combined) re-download on every cold start. In practice this crash-loops the service (see Troubleshooting) — use `local` for local dev, and rely on the Gemini fallback above for production resilience instead.
 - `NETLIFY_ORIGIN` only matters if you're hosting the front end separately from this server (see Deployment below) — it's the one origin allowed to call this API cross-origin.
 
+### Supabase setup
+
+Accounts and per-user Wolfram Alpha data are backed by [Supabase](https://supabase.com/) (Postgres + Auth), free tier. The schema lives in [`supabase/migrations/`](supabase/migrations) as versioned [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) migrations rather than a single ad-hoc SQL file, so the same history can be replayed against any fresh project (local dev, staging, a new prod project, or a disaster-recovery rebuild) with one command instead of manually copy-pasting SQL into the dashboard each time.
+
+1. Create a Supabase project.
+2. **Authentication → Providers** → enable **Anonymous Sign-Ins** (off by default) — this is what lets the installed PWA sign a user in with no password. Since anonymous sign-in needs no verification, a script could otherwise mint unlimited fresh accounts to keep re-harvesting new 5-lookups/day allowances against the shared `WOLFRAM_APP_ID` — enable invisible CAPTCHA or Cloudflare Turnstile here too (Supabase's own [recommendation](https://supabase.com/docs/guides/auth/auth-anonymous#abuse-prevention-and-rate-limits) for this exact risk) on top of the default 30-requests/hour IP rate limit.
+3. Apply the migrations with the Supabase CLI (no global install needed - `npx` pulls it on demand):
+   ```sh
+   npx supabase login
+   npx supabase link --project-ref your-project-ref   # found in the project's dashboard URL / Settings → General
+   npx supabase db push
+   ```
+   - `login` opens a browser to authenticate the CLI to your Supabase *account* (once per machine, not per project).
+   - `link` connects *this repo* to one specific *project* and will prompt for that project's database password — find or reset it under **Settings → Database → Database password**. `db push` fails with "Cannot find project ref. Have you run supabase link?" if this step is skipped.
+   - `db push` may print `Warning: failed to cache migrations catalog: ... failed to inspect docker image ...` if Docker isn't running/installed — that's benign here (it's only for an optional local diffing optimization); look for `Finished supabase db push.` at the end to confirm the migration actually applied, and confirm in **Table Editor** that `user_wolfram_keys`/`wolfram_usage` now exist.
+
+   This creates those two tables, their Row Level Security policies, and the `increment_wolfram_usage`/`decrement_wolfram_usage` functions the server uses to track the daily free-lookup cap atomically (see the comments in [`supabase/migrations/`](supabase/migrations) for why the `revoke`/`grant` lines in there are load-bearing). Setting up a second project later (e.g. a separate prod project) is the same `link` + `db push` against that project's ref — no manual SQL Editor work.
+4. **Project Settings → API** → copy the Project URL, the `anon` public key, and the `service_role` secret key.
+5. Put the Project URL + `service_role` key in this repo's `.env` (`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`) and, for local frontend dev, in `frontend/.env` (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` — see [`frontend/.env.example`](frontend/.env.example)). In production, set the `VITE_*` ones as Netlify build environment variables (they get baked into the built JS at build time, since there's no server to read them at runtime).
+
+**Adding a schema change later:**
+```sh
+npx supabase migration new <description>   # creates a new timestamped file in supabase/migrations/
+# write the SQL in that new file
+npx supabase db push                        # applies only the new, not-yet-applied migration(s)
+```
+`link` only needs to be run again if you're doing this from a different machine/clone (the link is stored locally, not committed) or targeting a different project.
+
 ## Running
+
+Start the API server:
 
 ```sh
 npm start
 ```
 
-Then open `http://localhost:3000`.
+In a separate terminal, run the frontend in dev mode:
+
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+Then open the URL Vite prints (typically `http://localhost:5173`). The frontend's dev server proxies API calls to whatever `VITE_API_BASE` is set to in `frontend/.env` (leave it empty to call `http://localhost:3000` on the same machine).
 
 ## Deployment
 
-The front end (`index.html`/`overwatch.css`/`overwatch.js`) and the API server (`server.js`) don't have to be hosted together. This repo is set up to run as:
+The front end (`frontend/`) and the API server (`server.js`) don't have to be hosted together. This repo is set up to run as:
 
 - **API server on [Render](https://render.com)** — free tier, no credit card required. Push this repo, set the env vars from `.env.example` in Render's dashboard, build command `npm install`, start command `npm start`. Render sets its own `PORT` env var automatically; don't override it.
-- **Static front end on [Netlify](https://netlify.com)** (or anywhere else that serves static files) — `overwatch.js` calls the Render API directly via the hardcoded `API_BASE` constant at the top of the file, rather than relative paths, so it works regardless of what origin serves the page. If you redeploy to a different Render URL, update `API_BASE` there.
+- **Static front end on [Netlify](https://netlify.com)** (or anywhere else that serves static files) — [`netlify.toml`](netlify.toml) at the repo root tells Netlify to build from the `frontend/` directory (`base = "frontend"`, `command = "npm run build"`, `publish = "dist"`). Set `VITE_API_BASE`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` as Netlify build environment variables (Site settings → Environment variables) — since there's no server at runtime to inject them, Vite bakes them into the built JS at build time. If you redeploy `server.js` to a different Render URL, update `VITE_API_BASE` and redeploy the frontend.
 - CORS is handled by `NETLIFY_ORIGIN` in `server.js` — set it to your actual static site's URL so the browser allows the cross-origin call.
 
 Why not just proxy `/api/*` through Netlify's redirects instead of calling Render directly? Netlify's redirect/proxy to an external URL times out at ~27 seconds, which is shorter than Render's free-tier cold-start wake time (30-60s after 15 min idle) and shorter than the worst case for the Purdue GenAI primary+fallback chain — so a proxy would fail exactly when you need it most. Calling Render directly removes that ceiling; the browser will wait as long as `server.js` takes.
 
 **Caveat**: Render's free tier spins down after 15 minutes of inactivity. The first request after that will take 30-60s to respond (not fail, just slow) while it wakes back up.
 
-Visiting the Render URL directly (not through Netlify) also works fine — same-origin requests aren't subject to CORS at all, so `NETLIFY_ORIGIN` is irrelevant in that case.
+Visiting the Render URL directly (not through Netlify) also works fine: `server.js` serves the built `frontend/dist` itself (run `npm run build` in `frontend/` first), and same-origin requests aren't subject to CORS at all, so `NETLIFY_ORIGIN` is irrelevant in that case.
 
 ## Project layout
 
-- `server.js` — Node/Express server. Serves the static front end and proxies requests to the chosen food-detection backend + Wolfram Alpha so credentials stay server-side.
-- `index.html` — the page markup.
-- `overwatch.js` — client-side script: reads the uploaded photo, sends it to the server, and renders the result.
-- `overwatch.css` — styling.
+- `server.js` — Node/Express server. Serves the built front end and proxies requests to the chosen food-detection backend + Wolfram Alpha so credentials stay server-side; also resolves each user's Wolfram Alpha access (their own key, or the shared metered one) behind Supabase-authenticated routes.
+- `frontend/` — Vite + React SPA: login/anonymous-session UI, the upload/nutrition-result flow, the Wolfram Alpha BYOK settings panel, and PWA manifest/service-worker config (`vite-plugin-pwa`). Has its own `package.json`/`.env.example` — see "Running" above.
+- `supabase/schema.sql` — Postgres schema (run once in the Supabase SQL Editor) for per-user Wolfram Alpha keys and the daily free-lookup counter, including the Row Level Security policies and RPC functions the server uses.
+- `netlify.toml` — tells Netlify to build `frontend/` rather than the repo root.
 - `.env.example` — template listing every env var the server reads.
 - `.env` — your local credentials (never committed).
 
@@ -100,6 +147,9 @@ The nutrition image's size and text size come from the Wolfram Alpha request in 
 - **Node fails to start with `Error: UNKNOWN: unknown error, read` on `server.js`** — this is a known Windows + OneDrive quirk, not an app bug: OneDrive's sync/cloud-file layer briefly locks a file it's just finished syncing, so Node's file read fails at exactly the wrong moment. It's transient — just re-run `npm start`. If it keeps happening, mark the project folder "Always keep on this device" in OneDrive settings, or move the project outside a OneDrive-synced folder.
 - **Port 3000 already in use** — set `PORT=3001` (or any free port) in `.env` and restart.
 - **Nutrition lookups that used to work start failing for everything** — you may have hit Wolfram Alpha's 2,000-calls/month free-tier cap. Check your usage at the [Wolfram Alpha Developer Portal](https://developer.wolframalpha.com/portal/myapps/); the exact error Wolfram returns once you're over quota hasn't been confirmed here.
+- **"Missing Authorization header." / "Invalid or expired session." on every API call** — the frontend has no signed-in session yet, or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are missing or wrong on the server (`requireAuth` in `server.js` can't verify the token without them). Confirm both are set and match the same Supabase project the frontend's `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` point at.
+- **The installed PWA gets stuck on the login form instead of signing in automatically** — either `supabase/schema.sql`'s Anonymous Sign-Ins provider isn't enabled (Authentication → Providers in the Supabase dashboard, off by default), or the standalone-mode detection in `frontend/src/hooks/useStandalone.js` didn't recognize this install path (known to vary across browsers/iOS versions). Tap "Continue without an account" on the login form either way — it calls the same anonymous sign-in directly.
+- **"You've used all 5 free nutrition lookups for today."** — expected behavior once a user without their own Wolfram Alpha key hits the daily cap on the shared `WOLFRAM_APP_ID` (see "Accounts & Wolfram Alpha usage" above); add a personal key in Settings for unlimited lookups, or wait until the next UTC day.
 
 ## License
 

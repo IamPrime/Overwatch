@@ -4,6 +4,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    // Lets local dev leave VITE_API_BASE empty (relative paths) same as production same-origin
+    // hosting - `vite dev` runs on its own port (5173) separate from the Express API (3000), so
+    // without this, relative /api/* requests would hit Vite's dev server instead of server.js.
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
+  },
   plugins: [
     react(),
     VitePWA({

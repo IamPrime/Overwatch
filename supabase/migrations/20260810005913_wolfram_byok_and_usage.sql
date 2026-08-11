@@ -1,5 +1,24 @@
 -- Overwatch v2 schema: per-user Wolfram Alpha BYOK + daily free-lookup usage tracking.
 -- Run this once in the Supabase SQL Editor for your project (see README's "v2 setup" section).
+--
+-- A note on anonymous-user access control (see
+-- https://supabase.com/docs/guides/auth/auth-anonymous#access-control): that guide's
+-- pattern is a RESTRICTIVE policy checking the is_anonymous JWT claim, e.g. "only
+-- permanent users may insert." Deliberately not used here, for two reasons: (1)
+-- server.js always queries with the service_role key, which bypasses RLS entirely, so
+-- a restrictive policy on these tables would never actually be evaluated unless a
+-- future frontend change queries them directly with the anon key; (2) even then, there
+-- is no operation here that should be permanent-users-only - anonymous (installed-PWA)
+-- and permanent (web-login) accounts are intentionally symmetric: both get the same
+-- 5 free lookups/day and can both save their own Wolfram App ID. The actual abuse risk
+-- specific to anonymous sign-in - repeatedly minting fresh accounts to keep harvesting
+-- new 5/day allowances against the shared WOLFRAM_APP_ID - isn't an RLS problem (RLS
+-- only governs what an already-created account can do, not how many accounts get
+-- created) and is instead covered by Supabase's own "Abuse prevention and rate limits"
+-- section for anonymous auth: enable invisible CAPTCHA/Cloudflare Turnstile on
+-- anonymous sign-ins in the dashboard (Authentication -> Sign In / Providers ->
+-- Anonymous Sign-Ins), on top of the default IP-based 30 requests/hour limit that
+-- applies out of the box.
 
 -- ============================================================
 -- BYOK: each user's optional personal Wolfram Alpha App ID
