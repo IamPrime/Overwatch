@@ -37,7 +37,6 @@ html, body {
     margin-top: -1.2rem;
 }
 
-.wrapper form input[type='file'],
 .wrapper form input[type='email'],
 .wrapper form input[type='password'],
 .wrapper form input[type='text'] {
@@ -49,6 +48,49 @@ html, body {
     max-width: 400px;
     box-sizing: border-box;
     padding: 0.5rem;
+}
+
+/* The "Take Photo" / "Choose from Library" file inputs are triggered programmatically
+   (via ref.click()) from their own visible buttons, so the inputs themselves stay hidden. */
+.file-input-hidden {
+    display: none;
+}
+
+.photo-source-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 1rem auto;
+}
+
+/* Needs to out-specificity ".wrapper form button" (which styles the full-width Analyse
+   button) - a bare class alone loses to that descendant selector, same issue as
+   .password-toggle above. Deliberately small/outline/side-by-side so these read as
+   secondary "pick a source" actions rather than competing with the primary Analyse button. */
+.wrapper form button.photo-source-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    background: white;
+    border: 2px solid darkslateblue;
+    color: darkslateblue;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.4rem 0.85rem;
+    width: auto;
+    max-width: none;
+}
+
+.photo-source-button:hover {
+    background: darkslateblue;
+    color: white;
+}
+
+.photo-source-button svg {
+    flex-shrink: 0;
 }
 
 .wrapper form button {
