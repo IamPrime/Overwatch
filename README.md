@@ -34,7 +34,7 @@ Which one is used is controlled by the `FOOD_DETECTOR` env var:
 
 ## Setup
 
-```sh
+```bash
 npm install
 ```
 
@@ -73,11 +73,13 @@ Accounts and per-user Wolfram Alpha data are backed by [Supabase](https://supaba
 1. Create a Supabase project.
 2. **Authentication → Providers** → enable **Anonymous Sign-Ins** (off by default) — this is what lets the installed PWA sign a user in with no password. Since anonymous sign-in needs no verification, a script could otherwise mint unlimited fresh accounts to keep re-harvesting new 5-lookups/day allowances against the shared `WOLFRAM_APP_ID` — enable invisible CAPTCHA or Cloudflare Turnstile here too (Supabase's own [recommendation](https://supabase.com/docs/guides/auth/auth-anonymous#abuse-prevention-and-rate-limits) for this exact risk) on top of the default 30-requests/hour IP rate limit.
 3. Apply the migrations with the Supabase CLI (no global install needed - `npx` pulls it on demand):
-   ```sh
-   npx supabase login
-   npx supabase link --project-ref your-project-ref   # found in the project's dashboard URL / Settings → General
-   npx supabase db push
+
+   ```bash
+      npx supabase login
+      npx supabase link --project-ref your-project-ref   # found in the project's   dashboard URL / Settings → General
+      npx supabase db push
    ```
+
    - `login` opens a browser to authenticate the CLI to your Supabase *account* (once per machine, not per project).
    - `link` connects *this repo* to one specific *project* and will prompt for that project's database password — find or reset it under **Settings → Database → Database password**. `db push` fails with "Cannot find project ref. Have you run supabase link?" if this step is skipped.
    - `db push` may print `Warning: failed to cache migrations catalog: ... failed to inspect docker image ...` if Docker isn't running/installed — that's benign here (it's only for an optional local diffing optimization); look for `Finished supabase db push.` at the end to confirm the migration actually applied, and confirm in **Table Editor** that `user_wolfram_keys`/`wolfram_usage` now exist.
@@ -87,24 +89,26 @@ Accounts and per-user Wolfram Alpha data are backed by [Supabase](https://supaba
 5. Put the Project URL + `service_role` key in this repo's `.env` (`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`) and, for local frontend dev, in `frontend/.env` (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` — see [`frontend/.env.example`](frontend/.env.example)). In production, set the `VITE_*` ones as Netlify build environment variables (they get baked into the built JS at build time, since there's no server to read them at runtime).
 
 **Adding a schema change later:**
-```sh
+
+```bash
 npx supabase migration new <description>   # creates a new timestamped file in supabase/migrations/
 # write the SQL in that new file
 npx supabase db push                        # applies only the new, not-yet-applied migration(s)
 ```
+
 `link` only needs to be run again if you're doing this from a different machine/clone (the link is stored locally, not committed) or targeting a different project.
 
 ## Running
 
 Start the API server:
 
-```sh
+```bash
 npm start
 ```
 
 In a separate terminal, run the frontend in dev mode:
 
-```sh
+```bash
 cd frontend
 npm install
 npm run dev
@@ -144,7 +148,7 @@ The nutrition image's size and text size come from the Wolfram Alpha request in 
 
 - **"Could not identify the food in this image."** — Check the server console. If `FOOD_DETECTOR=grubwatch` and it logs an error from the primary model, the fallback model, and Gemini (or Gemini was never attempted because `GEMINI_API_KEY` isn't set), your `PURDUE_GENAI_API_KEY` may be missing/invalid, or all configured models are down — check genai.rcac.purdue.edu directly. If `FOOD_DETECTOR=local`, check that the model finished downloading (see server console on first run).
 - **Render service silently restarts (`==> Running 'npm start'` appears again with no new `==> Deploying...` block) shortly after setting `FOOD_DETECTOR=local`** — this is Render's supervisor relaunching a crashed process, almost certainly an out-of-memory kill (Render's free tier logs don't print an explicit OOM message). The local classifier + translator models need more RAM than the free tier's ~512MB, and don't persist across the free tier's ephemeral disk, so every cold start re-triggers the same crash on the next request. Use `local` for local dev only; in production, rely on the Gemini fallback (`GEMINI_API_KEY`) instead.
-- **`Wolfram Alpha couldn't find nutrition facts for "..."`** — Wolfram Alpha's Simple API is queried with the bare food name (not "\<food\> nutrition facts" — that phrasing 501s on some dish names, e.g. "sandwich nutrition facts" fails but "sandwich" alone works). The server already falls back to just the last word of the tag once; if both attempts fail, Wolfram Alpha genuinely doesn't have an entry for that food/phrasing.
+- **`Overwatch couldn't find nutrition facts for "..."`** — this message deliberately doesn't name Wolfram Alpha (see "Accounts & Wolfram Alpha usage" above for where the app does still name it, vs. generic failures like this one), but under the hood it's still Wolfram Alpha's Simple API being queried with the bare food name (not "\<food\> nutrition facts" — that phrasing 501s on some dish names, e.g. "sandwich nutrition facts" fails but "sandwich" alone works). The server already falls back to just the last word of the tag once; if both attempts fail, Wolfram Alpha genuinely doesn't have an entry for that food/phrasing.
 - **Node fails to start with `Error: UNKNOWN: unknown error, read` on `server.js`** — this is a known Windows + OneDrive quirk, not an app bug: OneDrive's sync/cloud-file layer briefly locks a file it's just finished syncing, so Node's file read fails at exactly the wrong moment. It's transient — just re-run `npm start`. If it keeps happening, mark the project folder "Always keep on this device" in OneDrive settings, or move the project outside a OneDrive-synced folder.
 - **Port 3000 already in use** — set `PORT=3001` (or any free port) in `.env` and restart.
 - **Nutrition lookups that used to work start failing for everything** — you may have hit Wolfram Alpha's 2,000-calls/month free-tier cap. Check your usage at the [Wolfram Alpha Developer Portal](https://developer.wolframalpha.com/portal/myapps/); the exact error Wolfram returns once you're over quota hasn't been confirmed here.
