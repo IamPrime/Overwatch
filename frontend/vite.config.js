@@ -9,6 +9,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 const apiPort = process.env.API_PORT || loadEnv('', '..', '').PORT || 3000
 
 export default defineConfig({
+  // `npm test` - component tests run in a simulated browser (jsdom), see src/**/*.test.jsx.
+  test: {
+    environment: 'jsdom',
+  },
   server: {
     // Lets local dev leave VITE_API_BASE empty (relative paths) same as production same-origin
     // hosting - `vite dev` runs on its own port (5173) separate from the Express API (3000), so

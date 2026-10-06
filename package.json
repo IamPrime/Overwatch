@@ -2,7 +2,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node scripts/dev.js",
-    "build": "npm install --prefix frontend && npm run build --prefix frontend"
+    "build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "test": "node --test test/*.test.js",
+    "test:live": "node --test --test-concurrency=1 test/live/*.live.test.js"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
