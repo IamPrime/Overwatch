@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { detectFood, fetchNutritionImage } from '../lib/api';
+import { detectFood, detectFoodFromText, fetchNutritionImage } from '../lib/api';
+import { FriendlyError, friendlyMessage } from '../lib/errors';
 import { isMobileDevice } from '../hooks/useDeviceType';
 import { NutritionResult } from './NutritionResult';
 import { Lightbox } from './Lightbox';
+import { DescribeFood } from './DescribeFood';
+
+// Shown when identifying fails in a way the server or this app didn't describe itself.
+const IDENTIFY_FAILED = 'Something went wrong identifying your food - please try again.';
 
 const LOADER_SRC = 'https://s3.amazonaws.com/static.mlh.io/icons/loading.svg';
 
@@ -31,7 +36,9 @@ function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split('base64,')[1]);
-    reader.onerror = reject;
+    // The error event has no message of its own (an unreadable file, or a format this browser
+    // can't open, like HEIC on some desktops).
+    reader.onerror = () => reject(new FriendlyError("Couldn't read that photo - try a different one, or save it as a JPEG or PNG."));
     reader.readAsDataURL(file);
   });
 }
@@ -51,6 +58,15 @@ export function UploadForm({ token, onUsageChange }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const [error, setError] = useState(null);
   const [lightboxSrc, setLightboxSrc] = useState(null);
+  // A photo detection waiting for the user to confirm or edit it before it's sent to Wolfram -
+  // detection itself is free, so a wrong guess never uses up a daily lookup. '' means detection
+  // failed and the user is asked to describe the food instead. confirmId re-mounts the confirm box
+  // (resetting its text) for each new detection.
+  const [pendingTag, setPendingTag] = useState(null);
+  // The server's signature for pendingTag - confirming it unchanged reuses this, since the
+  // nutrition lookup only accepts tags the detect routes signed.
+  const pendingTagToken = useRef(null);
+  const [confirmId, setConfirmId] = useState(0);
 
   // Revoke the nutrition-image blob URL whenever it's replaced or the component unmounts,
   // so repeated lookups in one session don't leak blob URLs.
@@ -73,6 +89,45 @@ export function UploadForm({ token, onUsageChange }) {
     event.target.value = '';
   }
 
+  // Shared second half of every lookup (confirmed photo or description): turn a food tag into
+  // the Wolfram nutrition image.
+  async function lookupNutrition(detectedTag, tagToken) {
+    setTag(detectedTag);
+
+    try {
+      const { blobUrl: nextBlobUrl, usage } = await fetchNutritionImage(detectedTag, tagToken, token);
+      if (previousBlobUrl.current) URL.revokeObjectURL(previousBlobUrl.current);
+      previousBlobUrl.current = nextBlobUrl;
+      setBlobUrl(nextBlobUrl);
+      if (usage) onUsageChange(usage);
+    } catch (nutritionError) {
+      const message = friendlyMessage(nutritionError, 'Something went wrong looking up the nutrition facts - please try again.');
+      setError(nutritionError.status === 429 ? `${message} See Settings below.` : message);
+      if (nutritionError.usage) onUsageChange(nutritionError.usage);
+    }
+  }
+
+  function resetResult() {
+    setTag(null);
+    setBlobUrl(null);
+    setError(null);
+    setPendingTag(null);
+  }
+
+  async function runLookup(detect) {
+    setLoading(true);
+    resetResult();
+
+    try {
+      const { tag: detectedTag, tagToken } = await detect();
+      await lookupNutrition(detectedTag, tagToken);
+    } catch (detectError) {
+      setError(friendlyMessage(detectError, IDENTIFY_FAILED));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleAnalyse() {
     const file = selectedFile;
     if (!file) {
@@ -81,34 +136,39 @@ export function UploadForm({ token, onUsageChange }) {
     }
 
     setLoading(true);
-    setTag(null);
-    setBlobUrl(null);
-    setError(null);
+    resetResult();
+    setConfirmId((id) => id + 1);
 
     try {
-      const base64 = await fileToBase64(file);
-      const { tag: detectedTag } = await detectFood(base64, token);
-      setTag(detectedTag);
-
-      try {
-        const { blobUrl: nextBlobUrl, usage } = await fetchNutritionImage(detectedTag, token);
-        if (previousBlobUrl.current) URL.revokeObjectURL(previousBlobUrl.current);
-        previousBlobUrl.current = nextBlobUrl;
-        setBlobUrl(nextBlobUrl);
-        if (usage) onUsageChange(usage);
-      } catch (nutritionError) {
-        setError(
-          nutritionError.status === 429
-            ? `${nutritionError.message} See Settings below.`
-            : nutritionError.message,
-        );
-        if (nutritionError.usage) onUsageChange(nutritionError.usage);
-      }
+      const { tag: detectedTag, tagToken } = await detectFood(await fileToBase64(file), token);
+      pendingTagToken.current = tagToken;
+      setPendingTag(detectedTag);
     } catch (detectError) {
-      setError(detectError.message);
+      setError(friendlyMessage(detectError, IDENTIFY_FAILED));
+      setPendingTag('');
     } finally {
       setLoading(false);
     }
+  }
+
+  // Confirming the photo detection as-is goes straight to Wolfram; an edited or added-to name
+  // ("actually it's shawarma", "2 slices of pizza") is normalized by the text path first.
+  function handleConfirm(text) {
+    const detectedTag = pendingTag;
+    const tagToken = pendingTagToken.current;
+    runLookup(
+      text === detectedTag
+        ? async () => ({ tag: detectedTag, tagToken })
+        : () => detectFoodFromText(text, token),
+    );
+  }
+
+  // Describing food from scratch - drop any previous photo so the left panel doesn't show a
+  // picture of something else next to the result.
+  function handleDescribe(text) {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    runLookup(() => detectFoodFromText(text, token));
   }
 
   return (
@@ -146,6 +206,14 @@ export function UploadForm({ token, onUsageChange }) {
         </button>
       </form>
 
+      <p className="describe-food-divider">or describe what you're eating</p>
+      <DescribeFood
+        token={token}
+        onSubmit={handleDescribe}
+        disabled={loading}
+        placeholder='e.g. "chicken caesar salad"'
+      />
+
       <div id="predictions">
         <div className="food-photo" style={previewUrl ? { backgroundImage: `url(${previewUrl})` } : undefined}>
           {!previewUrl && (
@@ -160,7 +228,23 @@ export function UploadForm({ token, onUsageChange }) {
           </div>
           <div id="concepts">
             {loading && <img src={LOADER_SRC} className="loading" alt="Loading" />}
-            {!loading && <NutritionResult tag={tag} blobUrl={blobUrl} error={error} onEnlarge={setLightboxSrc} />}
+            {!loading && pendingTag !== null && (
+              <div className="confirm-food">
+                <p>{error ? `${error} Describe it instead:` : 'Looks like:'}</p>
+                <DescribeFood
+                  token={token}
+                  key={confirmId}
+                  initialValue={pendingTag}
+                  onSubmit={handleConfirm}
+                  placeholder="Describe the food in the photo"
+                  submitLabel="Look up nutrition"
+                />
+                <p className="confirm-food-hint">Not right? Edit it first, or add an amount like "2 slices".</p>
+              </div>
+            )}
+            {!loading && pendingTag === null && (
+              <NutritionResult tag={tag} blobUrl={blobUrl} error={error} onEnlarge={setLightboxSrc} />
+            )}
           </div>
         </div>
       </div>

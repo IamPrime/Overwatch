@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { isStandalone } from './useStandalone';
+import { authErrorMessage } from '../lib/errors';
 
 // Tracks the Supabase session and offers the sign-in actions the UI needs. On first
 // mount, if there's no existing session: an installed/standalone PWA auto-signs in
@@ -23,7 +24,7 @@ export function useAuth() {
       if (!existing && isStandalone() && !triedAutoAnonymous.current) {
         triedAutoAnonymous.current = true;
         const { error: signInError } = await supabase.auth.signInAnonymously();
-        if (signInError) setError(signInError.message);
+        if (signInError) setError(authErrorMessage(signInError));
       } else {
         setSession(existing);
       }
@@ -44,21 +45,21 @@ export function useAuth() {
   async function signInWithPassword(email, password) {
     setError(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) setError(signInError.message);
+    if (signInError) setError(authErrorMessage(signInError));
     return !signInError;
   }
 
   async function signUp(email, password) {
     setError(null);
     const { error: signUpError } = await supabase.auth.signUp({ email, password });
-    if (signUpError) setError(signUpError.message);
+    if (signUpError) setError(authErrorMessage(signUpError));
     return !signUpError;
   }
 
   async function continueWithoutAccount() {
     setError(null);
     const { error: signInError } = await supabase.auth.signInAnonymously();
-    if (signInError) setError(signInError.message);
+    if (signInError) setError(authErrorMessage(signInError));
     return !signInError;
   }
 

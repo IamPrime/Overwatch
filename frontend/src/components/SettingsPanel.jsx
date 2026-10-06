@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { saveWolframKey, deleteWolframKey } from '../lib/api';
+import { friendlyMessage } from '../lib/errors';
+
+const SETTINGS_FAILED = "Couldn't update your Wolfram Alpha settings - please try again.";
 
 export function SettingsPanel({ token, usage, onUsageChange }) {
   const [appId, setAppId] = useState('');
@@ -15,7 +18,7 @@ export function SettingsPanel({ token, usage, onUsageChange }) {
       setAppId('');
       await onUsageChange();
     } catch (err) {
-      setError(err.message);
+      setError(friendlyMessage(err, SETTINGS_FAILED));
     } finally {
       setBusy(false);
     }
@@ -28,7 +31,7 @@ export function SettingsPanel({ token, usage, onUsageChange }) {
       await deleteWolframKey(token);
       await onUsageChange();
     } catch (err) {
-      setError(err.message);
+      setError(friendlyMessage(err, SETTINGS_FAILED));
     } finally {
       setBusy(false);
     }

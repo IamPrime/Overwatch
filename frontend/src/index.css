@@ -298,3 +298,95 @@ html, body {
 .settings-hint a {
     color: darkslateblue;
 }
+
+.describe-food-divider {
+    text-align: center;
+    color: orange;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0;
+}
+
+.describe-food-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem auto;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Out-specifies ".wrapper form input[type='text']" (block, centered, auto margins) so the
+   input sits in a row next to the mic button instead. */
+.wrapper form .describe-food-row input[type='text'] {
+    flex: 1;
+    margin: 0;
+    max-width: none;
+    min-width: 0;
+}
+
+/* Same specificity issue as .photo-source-button - must beat ".wrapper form button". */
+.wrapper form button.mic-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: white;
+    border: 2px solid darkslateblue;
+    border-radius: 50%;
+    color: darkslateblue;
+    margin: 0;
+    padding: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    max-width: none;
+}
+
+.wrapper form button.mic-button:hover {
+    background: darkslateblue;
+    color: white;
+}
+
+.wrapper form button.mic-button.listening {
+    background: crimson;
+    border-color: crimson;
+    color: white;
+    animation: mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+    50% { opacity: 0.6; }
+}
+
+.wrapper form button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.describe-food-error {
+    color: crimson;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+#predictions .confirm-food {
+    padding: 0 1rem;
+    font-family: 'Ubuntu', sans-serif;
+    color: darkslateblue;
+}
+
+#predictions .confirm-food p {
+    margin: 1rem 0 0;
+}
+
+#predictions .confirm-food .describe-food-row,
+#predictions .confirm-food .describe-food-submit {
+    margin: 0.5rem auto;
+}
+
+#predictions .confirm-food p.confirm-food-hint {
+    font-size: 0.8rem;
+    color: orange;
+    margin-top: 0;
+}
