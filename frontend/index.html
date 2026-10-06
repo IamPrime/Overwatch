@@ -11,6 +11,8 @@
     <!-- iOS ignores the manifest-driven install flow entirely; it needs its own opaque
          touch icon since its manifest-icon fallback is unreliable across versions. -->
     <link rel="apple-touch-icon" href="/overwatch-images/apple-touch-icon-180.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Older iOS Safari only honors the Apple-prefixed name; Chrome warns about it but it's harmless. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="GrubWatch" />
 
