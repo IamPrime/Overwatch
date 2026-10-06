@@ -1,15 +1,21 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+// Port of the API server the dev proxy below forwards /api to. The root `npm run dev` (scripts/dev.js)
+// picks a free one and passes it as API_PORT; running Vite on its own falls back to PORT from the
+// root .env (next to server.js, not frontend/.env), then 3000.
+const apiPort = process.env.API_PORT || loadEnv('', '..', '').PORT || 3000
+
 export default defineConfig({
   server: {
     // Lets local dev leave VITE_API_BASE empty (relative paths) same as production same-origin
     // hosting - `vite dev` runs on its own port (5173) separate from the Express API (3000), so
     // without this, relative /api/* requests would hit Vite's dev server instead of server.js.
+    // Port comes from apiPort above.
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': `http://localhost:${apiPort}`,
     },
   },
   plugins: [
