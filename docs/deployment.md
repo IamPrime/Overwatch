@@ -37,6 +37,14 @@ The Netlify frontend calls the Render API directly, cross-origin (allowed by `NE
 
    Installed PWAs and long-open tabs keep running the old frontend until they reload. When a release changes what the frontend sends, those users hit errors until they refresh. The release that added [tag signing](how-it-works.md#2-the-server-enforces-the-ais-decision-signed-tags) is one: old copies don't send a signature, so their lookups fail with "Please identify the food again..." until the app reloads.
 5. **Check the deploy**; see [After a deploy](#after-a-deploy).
+6. **Tag the release** once it checks out, so every version that was live can be found again:
+
+   ```bash
+   git tag -a v3.0.0 -m "v3: Tailwind redesign, dark mode, rename to Angalia"
+   git push origin v3.0.0
+   ```
+
+   Versions: the first number for a big change users notice (a redesign, a rename), the middle one for new features, the last for fixes only. Tags only mark commits; Render and Netlify still deploy whatever is on `app-version`. `git tag -n` lists the tags with their messages.
 
 ## Render settings (API server)
 
@@ -124,4 +132,9 @@ If a deploy breaks production:
    - **Netlify:** Deploys → the last good deploy → **Publish deploy**.
 
    Roll back both if the problem spans the frontend and API. After rolling back, check that each service's auto-deploy setting is still how you want it.
-2. **Fix it in the branch.** A rollback only lasts until the next deploy, so the next push to `app-version` deploys whatever is on the branch. Either fix the problem, or undo the bad commit with `git revert <commit>` and push.
+2. **Fix it in the branch.** A rollback only lasts until the next deploy, so the next push to `app-version` deploys whatever is on the branch. Either fix the problem, or undo the bad commit with `git revert <commit>` and push. To go back a whole release, revert everything since the last good tag, which keeps history and needs no force-push:
+
+   ```bash
+   git revert --no-edit v2.1.0..HEAD   # one undo commit per commit since v2.1.0
+   git push origin app-version
+   ```
