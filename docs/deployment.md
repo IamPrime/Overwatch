@@ -83,7 +83,9 @@ Code changes deploy on push, but **environment variables are only changed in the
 - **Netlify:** a changed variable only takes effect in the next build. Trigger one from Deploys → Trigger deploy, or push a commit.
 - **Both:** a `VITE_*` change is needed in both Render and Netlify, since each builds its own copy of the frontend.
 
-Changes that needed **no** settings changes: the photo confirm step, text and voice input, Whisper, the food-only check and tag signing (its key comes from the existing `SUPABASE_SERVICE_ROLE_KEY`), the quantity and list rules, and `npm run dev`.
+Changes that needed **no** settings changes: the photo confirm step, text and voice input, Whisper, the food-only check and tag signing (its key comes from the existing `SUPABASE_SERVICE_ROLE_KEY`), the quantity and list rules, `npm run dev`, and the Tailwind redesign and rename to Angalia (Tailwind installs and builds with the frontend's other dependencies).
+
+The Netlify site is still named `grubwatch` (`grubwatch.netlify.app`). Renaming it is optional; if you do, also update `NETLIFY_ORIGIN` on Render (otherwise the API rejects the frontend's requests) and the Supabase Redirect URLs.
 
 ## Free-tier limits
 

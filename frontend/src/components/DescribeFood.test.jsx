@@ -128,7 +128,7 @@ describe('DescribeFood', () => {
     await act(() => fireEvent.click(micButton()));
     await act(() => fireEvent.click(screen.getByRole('button', { name: 'Stop recording' })));
 
-    const message = await screen.findByText(/./, { selector: '.describe-food-error' });
+    const message = await screen.findByRole('alert');
     expectFriendly(message.textContent);
     expect(transcribeAudio).not.toHaveBeenCalled();
   });

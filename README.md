@@ -16,6 +16,7 @@
 - **Voice:** tap the mic and say it, in any of 99 languages. The server transcribes it with Whisper, and you check the text before looking it up. Works in every current browser.
 - **Food and drink only:** anything else ("hydrogen peroxide", a pet, a question) is refused with an explanation.
 - **Accounts:** email/password on the web, or no-password anonymous sessions in the installed phone app (PWA). Everyone gets 5 free nutrition lookups a day; adding your own free Wolfram Alpha App ID in Settings removes the cap.
+- **Phone and desktop, light and dark:** one step per screen on phones, the lookup and its result side by side on desktop. Follows the device's light/dark setting, or pick one in Settings.
 
 Nutrition facts come from the [Wolfram Alpha](https://www.wolframalpha.com/) Simple API. Food is identified by [Purdue GenAI Studio](https://genai.rcac.purdue.edu/) with a [Gemini](https://ai.google.dev/) fallback, or by models running on the server itself. Voice uses [Whisper](https://huggingface.co/onnx-community/whisper-base) on the server.
 

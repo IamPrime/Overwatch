@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Food & Recipe Analysis" />
-    <meta name="keywords" content="AI, Analysis, Food, Wolfram Alpha" />
+    <meta name="description" content="Snap or describe your food to get its nutrition facts" />
+    <meta name="keywords" content="AI, Analysis, Food, Nutrition, Wolfram Alpha" />
     <meta name="author" content="I_am_Prime" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#800080" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#5b1a74" />
 
     <!-- iOS ignores the manifest-driven install flow entirely; it needs its own opaque
          touch icon since its manifest-icon fallback is unreliable across versions. -->
@@ -17,7 +17,18 @@
     <meta name="apple-mobile-web-app-title" content="Angalia" />
 
     <link rel="icon" type="image/png" sizes="192x192" href="/overwatch-images/icon-192.png" />
-    <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed&family=Ubuntu:wght@400&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sansita+Swashed:wght@800&display=swap" rel="stylesheet" />
+
+    <!-- Applies a saved Light/Dark choice before the first paint, so a dark-mode user doesn't
+         see a flash of the light theme while React loads. Must match useAppearance.js. -->
+    <script>
+      try {
+        var appearance = localStorage.getItem('angalia-appearance');
+        if (appearance === 'light' || appearance === 'dark') document.documentElement.dataset.theme = appearance;
+      } catch (e) {}
+    </script>
 
     <title>Angalia - Food & Nutrition Analysis</title>
   </head>

@@ -1,392 +1,106 @@
-html, body {
-    font-family: 'Sansita Swashed', cursive;
-    height: 100%;
-    background: purple;
-    margin: 0;
+@import "tailwindcss";
+
+/* Colour tokens. Components only use the utilities generated from these (bg-surface, text-sub...),
+   so dark mode is just a second set of values here rather than dark: variants on every element.
+   The theme follows the system setting unless the user picked Light or Dark in Settings, which
+   sets data-theme on <html> (see useAppearance.js). */
+:root {
+  --app-bg: #f6f1fa;
+  --surface: #ffffff;
+  --ink: #2a1838;
+  --sub: #6d5a7d;
+  --brand: #5b1a74;
+  --brand-ink: #ffffff;
+  --gold: #d9a21b;
+  --gold-ink: #2a1838;
+  --rule: #e6dcee;
+  --field: #faf7fc;
+  --danger: #c8283f;
+  --ok: #2e9e5b;
+  --hero: #5b1a74;
+  color-scheme: light;
 }
 
-#root {
-    height: 100%;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --app-bg: #170d1f;
+    --surface: #22152d;
+    --ink: #f3eaf8;
+    --sub: #b4a3c2;
+    --brand: #c58be0;
+    --brand-ink: #1a0f22;
+    --gold: #e8b53a;
+    --gold-ink: #1a0f22;
+    --rule: #3a2a47;
+    --field: #1c1125;
+    --danger: #ff6b7f;
+    --ok: #4cc283;
+    --hero: #3a1450;
+    color-scheme: dark;
+  }
 }
 
-.wrapper {
-    background: white;
-    border-radius: 5px;
-    margin: 60px auto;
-    padding: 30px;
-    width: 800px;
-    max-width: calc(100% - 40px);
-    box-sizing: border-box;
+:root[data-theme='dark'] {
+  --app-bg: #170d1f;
+  --surface: #22152d;
+  --ink: #f3eaf8;
+  --sub: #b4a3c2;
+  --brand: #c58be0;
+  --brand-ink: #1a0f22;
+  --gold: #e8b53a;
+  --gold-ink: #1a0f22;
+  --rule: #3a2a47;
+  --field: #1c1125;
+  --danger: #ff6b7f;
+  --ok: #4cc283;
+  --hero: #3a1450;
+  color-scheme: dark;
 }
 
-.wrapper h1 {
-    font-family: 'Ubuntu', sans-serif;
-    color: goldenrod;
+@theme inline {
+  --color-app: var(--app-bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-rule: var(--rule);
+  --color-field: var(--field);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-hero: var(--hero);
+
+  --font-sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-word: 'Sansita Swashed', Georgia, serif;
+
+  /* A gold ring that swells and fades - draws the eye to "Change photo" once a result is in.
+     Runs a few times then stops, so it doesn't keep flashing while the result is being read. */
+  --animate-nudge: nudge 1.4s ease-out 4;
+
+  @keyframes nudge {
+    0% {
+      box-shadow: 0 0 0 0 rgb(232 181 58 / 0.9);
+    }
+    100% {
+      box-shadow: 0 0 0 10px rgb(232 181 58 / 0);
+    }
+  }
 }
 
-.wrapper h1,
-.wrapper h2 {
-    text-align: center;
-}
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
 
-.wrapper h2 {
-    font-size: 1.2rem;
-    font-weight: normal;
-    color: orange;
-    margin-bottom: 3rem;
-    margin-top: -1.2rem;
-}
+  body {
+    @apply bg-app font-sans text-ink antialiased;
+  }
 
-.wrapper form input[type='email'],
-.wrapper form input[type='password'],
-.wrapper form input[type='text'] {
-    display: block;
-    margin: 1rem auto;
-    color: darkslateblue;
-    font-family: 'Ubuntu', sans-serif;
-    width: 100%;
-    max-width: 400px;
-    box-sizing: border-box;
-    padding: 0.5rem;
-}
-
-/* The "Take Photo" / "Choose from Library" file inputs are triggered programmatically
-   (via ref.click()) from their own visible buttons, so the inputs themselves stay hidden. */
-.file-input-hidden {
-    display: none;
-}
-
-.photo-source-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 0.6rem;
-    margin: 1rem auto;
-}
-
-/* Needs to out-specificity ".wrapper form button" (which styles the full-width Analyse
-   button) - a bare class alone loses to that descendant selector, same issue as
-   .password-toggle above. Deliberately small/outline/side-by-side so these read as
-   secondary "pick a source" actions rather than competing with the primary Analyse button. */
-.wrapper form button.photo-source-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    background: white;
-    border: 2px solid darkslateblue;
-    color: darkslateblue;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: normal;
-    margin: 0;
-    padding: 0.4rem 0.85rem;
-    width: auto;
-    max-width: none;
-}
-
-.photo-source-button:hover {
-    background: darkslateblue;
-    color: white;
-}
-
-.photo-source-button svg {
-    flex-shrink: 0;
-}
-
-.wrapper form button {
-    background: goldenrod;
-    border-color: orange;
-    border-radius: 5px;
-    color: darkslateblue;
-    display: block;
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 1rem;
-    font-weight: bold;
-    margin: 1rem auto;
-    padding: 1rem;
-    width: 100%;
-    max-width: 400px;
-    cursor: pointer;
-}
-
-.link-button {
-    background: none;
-    border: none;
-    color: darkslateblue;
-    cursor: pointer;
-    display: block;
-    font-family: 'Ubuntu', sans-serif;
-    margin: 0.5rem auto;
-    text-decoration: underline;
-}
-
-.password-field {
-    position: relative;
-    margin: 1rem auto;
-    width: 100%;
-    max-width: 400px;
-}
-
-.wrapper form .password-field input {
-    margin: 0;
-    width: 100%;
-    max-width: none;
-    padding-right: 2.75rem;
-    box-sizing: border-box;
-}
-
-/* Needs to out-specificity ".wrapper form button" (which styles the Sign in/Sign up
-   button as a full-width block) - a bare class alone loses to that descendant selector. */
-.wrapper form button.password-toggle {
-    display: flex;
-    background: none;
-    border: none;
-    margin: 0;
-    padding: 0;
-    width: 1.75rem;
-    max-width: none;
-    font-weight: normal;
-}
-
-.password-toggle {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    background: none;
-    border: none;
-    color: darkslateblue;
-    cursor: pointer;
-    padding: 0;
-}
-
-.password-toggle:hover {
-    color: goldenrod;
-}
-
-.auth-error {
-    color: crimson;
-    font-family: 'Ubuntu', sans-serif;
-    text-align: center;
-}
-
-#predictions {
-    overflow: auto;
-}
-
-#predictions .food-photo,
-#predictions .nutrition {
-    background: darkslateblue;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    float: left;
-    margin: 1rem auto;
-    min-height: 550px;
-    padding-top: 25px;
-    position: relative;
-    text-align: center;
-    width: 50%;
-    box-sizing: border-box;
-}
-
-#predictions .step {
-    color: orange;
-    font-size: 0.875rem;
-    left: 0.5rem;
-    line-height: 1rem;
-    position: absolute;
-    top: 0.5rem;
-}
-
-#predictions .step span {
-    border: 2px solid goldenrod;
-    border-radius: 50%;
-    display: inline-block;
-    font-weight: bold;
-    height: 1rem;
-    margin-right: 0.25rem;
-    width: 1rem;
-    text-align: center;
-}
-
-#predictions .nutrition .step span {
-    color: orange;
-    border-color: goldenrod;
-    font-weight: bold;
-}
-
-#predictions .nutrition {
-    background: #f6f6f6;
-    float: right;
-}
-
-#predictions #concepts h3 {
-    margin: 0.25rem;
-    color: darkslateblue;
-}
-
-#predictions #concepts img {
-    display: block;
-    margin: auto;
-    max-height: 520px;
-    max-width: 90%;
-}
-
-#predictions #concepts img.zoomable {
-    cursor: zoom-in;
-}
-
-.lightbox {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    cursor: zoom-out;
-    z-index: 1000;
-    overflow-y: auto;
-    text-align: center;
-    padding: 40px 0;
-    box-sizing: border-box;
-}
-
-.lightbox img {
-    max-width: 90vw;
-    cursor: zoom-out;
-}
-
-#predictions #concepts .loading {
-    left: 50%;
-    height: 100px;
-    margin: -50px 0 0 -50px;
-    position: absolute;
-    top: 50%;
-    width: 100px;
-}
-
-.settings-panel {
-    clear: both;
-    border-top: 2px solid #f6f6f6;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    font-family: 'Ubuntu', sans-serif;
-}
-
-.settings-panel h3 {
-    color: darkslateblue;
-    text-align: center;
-}
-
-.usage-status {
-    text-align: center;
-    color: orange;
-}
-
-.settings-hint {
-    text-align: center;
-    font-size: 0.85rem;
-    color: darkslateblue;
-}
-
-.settings-hint a {
-    color: darkslateblue;
-}
-
-.describe-food-divider {
-    text-align: center;
-    color: orange;
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 0.9rem;
-    margin: 0.5rem 0 0;
-}
-
-.describe-food-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 1rem auto;
-    width: 100%;
-    max-width: 400px;
-}
-
-/* Out-specifies ".wrapper form input[type='text']" (block, centered, auto margins) so the
-   input sits in a row next to the mic button instead. */
-.wrapper form .describe-food-row input[type='text'] {
-    flex: 1;
-    margin: 0;
-    max-width: none;
-    min-width: 0;
-}
-
-/* Same specificity issue as .photo-source-button - must beat ".wrapper form button". */
-.wrapper form button.mic-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: white;
-    border: 2px solid darkslateblue;
-    border-radius: 50%;
-    color: darkslateblue;
-    margin: 0;
-    padding: 0;
-    width: 2.25rem;
-    height: 2.25rem;
-    max-width: none;
-}
-
-.wrapper form button.mic-button:hover {
-    background: darkslateblue;
-    color: white;
-}
-
-.wrapper form button.mic-button.listening {
-    background: crimson;
-    border-color: crimson;
-    color: white;
-    animation: mic-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes mic-pulse {
-    50% { opacity: 0.6; }
-}
-
-.wrapper form button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.describe-food-error {
-    color: crimson;
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 0.85rem;
-    text-align: center;
-}
-
-#predictions .confirm-food {
-    padding: 0 1rem;
-    font-family: 'Ubuntu', sans-serif;
-    color: darkslateblue;
-}
-
-#predictions .confirm-food p {
-    margin: 1rem 0 0;
-}
-
-#predictions .confirm-food .describe-food-row,
-#predictions .confirm-food .describe-food-submit {
-    margin: 0.5rem auto;
-}
-
-#predictions .confirm-food p.confirm-food-hint {
-    font-size: 0.8rem;
-    color: orange;
-    margin-top: 0;
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
 }

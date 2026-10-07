@@ -31,7 +31,7 @@ async function analysePhoto() {
   const photo = new File(['fake image bytes'], 'meal.jpg', { type: 'image/jpeg' });
 
   fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [photo] } });
-  fireEvent.click(screen.getByRole('button', { name: /analyse my nutrition/i }));
+  fireEvent.click(screen.getByRole('button', { name: /analyse photo/i }));
   // Reading the file and detecting are async - wait for the confirm step to appear.
   await screen.findByText('Looks like:');
 }
@@ -88,7 +88,7 @@ describe('UploadForm non-food input', () => {
     fireEvent.change(container.querySelector('input[type="file"]'), {
       target: { files: [new File(['x'], 'cat.jpg', { type: 'image/jpeg' })] },
     });
-    fireEvent.click(screen.getByRole('button', { name: /analyse my nutrition/i }));
+    fireEvent.click(screen.getByRole('button', { name: /analyse photo/i }));
 
     expect(await screen.findByText(/doesn't look like food or drink.*describe it instead/i)).toBeTruthy();
     expect(fetchNutritionImage).not.toHaveBeenCalled();
@@ -110,7 +110,7 @@ describe('UploadForm photo errors', () => {
       fireEvent.change(container.querySelector('input[type="file"]'), {
         target: { files: [new File(['x'], 'broken.heic', { type: 'image/heic' })] },
       });
-      fireEvent.click(screen.getByRole('button', { name: /analyse my nutrition/i }));
+      fireEvent.click(screen.getByRole('button', { name: /analyse photo/i }));
 
       const prompt = await screen.findByText(/describe it instead/i);
       expectFriendly(prompt.textContent.replace(/ Describe it instead:$/, ''));

@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
@@ -24,6 +25,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       // API calls (and Supabase auth, which goes to a different origin anyway) must never
@@ -38,8 +40,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#800080',
+        background_color: '#f6f1fa',
+        theme_color: '#5b1a74',
         icons: [
           { src: '/overwatch-images/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/overwatch-images/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

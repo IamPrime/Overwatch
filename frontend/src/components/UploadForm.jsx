@@ -5,32 +5,16 @@ import { isMobileDevice } from '../hooks/useDeviceType';
 import { NutritionResult } from './NutritionResult';
 import { Lightbox } from './Lightbox';
 import { DescribeFood } from './DescribeFood';
+import { Button, Card, LinkButton, OrDivider, Spinner } from './ui';
+import { CameraIcon, ImageIcon, PlusIcon, UploadIcon } from './icons';
 
 // Shown when identifying fails in a way the server or this app didn't describe itself.
 const IDENTIFY_FAILED = 'Something went wrong identifying your food - please try again.';
 
-const LOADER_SRC = 'https://s3.amazonaws.com/static.mlh.io/icons/loading.svg';
-
-// Inline SVG (same approach as AuthPanel's Eye/EyeOff icons) rather than an icon font/library
-// dependency for a two-icon need.
-function CameraIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <circle cx="12" cy="13" r="4" />
-    </svg>
-  );
-}
-
-function LibraryIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
-    </svg>
-  );
-}
+const LOADING_LABELS = {
+  identify: 'Identifying your food…',
+  lookup: 'Looking up the nutrition facts…',
+};
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -43,7 +27,7 @@ function fileToBase64(file) {
   });
 }
 
-export function UploadForm({ token, onUsageChange }) {
+export function UploadForm({ token, onUsageChange, onOpenSettings }) {
   const cameraInputRef = useRef(null);
   const libraryInputRef = useRef(null);
   const previousBlobUrl = useRef(null);
@@ -53,10 +37,13 @@ export function UploadForm({ token, onUsageChange }) {
   const [showTakePhoto] = useState(isMobileDevice);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // null, or which half of a lookup is running: 'identify' (detect routes) or 'lookup' (Wolfram).
+  const [loading, setLoading] = useState(null);
   const [tag, setTag] = useState(null);
   const [blobUrl, setBlobUrl] = useState(null);
   const [error, setError] = useState(null);
+  // 429 = today's free lookups are used up, which gets a shortcut to Settings.
+  const [errorStatus, setErrorStatus] = useState(null);
   const [lightboxSrc, setLightboxSrc] = useState(null);
   // A photo detection waiting for the user to confirm or edit it before it's sent to Wolfram -
   // detection itself is free, so a wrong guess never uses up a daily lookup. '' means detection
@@ -76,23 +63,39 @@ export function UploadForm({ token, onUsageChange }) {
     };
   }, []);
 
-  // Shared handler for both the "Take Photo" (capture) and "Choose from Library" (plain)
-  // inputs below - either one lands here with the chosen file. Resetting event.target.value
-  // afterwards means picking the same file twice in a row (e.g. retaking an identical shot)
-  // still fires this handler the second time.
+  // Picking a new photo starts a new lookup, replacing any result still on screen.
+  function pickFile(file) {
+    if (!file) return;
+    resetResult();
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  // Shared handler for both the "Take photo" (capture) and library inputs below - either one
+  // lands here with the chosen file. Resetting event.target.value afterwards means picking the
+  // same file twice in a row (e.g. retaking an identical shot) still fires this handler again.
   function handleFileChange(event) {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+    pickFile(event.target.files[0]);
     event.target.value = '';
+  }
+
+  // Desktop drag-and-drop onto the photo area.
+  function handleDrop(event) {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file?.type.startsWith('image/')) pickFile(file);
+  }
+
+  function clearPhoto() {
+    setSelectedFile(null);
+    setPreviewUrl(null);
   }
 
   // Shared second half of every lookup (confirmed photo or description): turn a food tag into
   // the Wolfram nutrition image.
   async function lookupNutrition(detectedTag, tagToken) {
     setTag(detectedTag);
+    setLoading('lookup');
 
     try {
       const { blobUrl: nextBlobUrl, usage } = await fetchNutritionImage(detectedTag, tagToken, token);
@@ -101,8 +104,8 @@ export function UploadForm({ token, onUsageChange }) {
       setBlobUrl(nextBlobUrl);
       if (usage) onUsageChange(usage);
     } catch (nutritionError) {
-      const message = friendlyMessage(nutritionError, 'Something went wrong looking up the nutrition facts - please try again.');
-      setError(nutritionError.status === 429 ? `${message} See Settings below.` : message);
+      setError(friendlyMessage(nutritionError, 'Something went wrong looking up the nutrition facts - please try again.'));
+      setErrorStatus(nutritionError.status ?? null);
       if (nutritionError.usage) onUsageChange(nutritionError.usage);
     }
   }
@@ -111,11 +114,18 @@ export function UploadForm({ token, onUsageChange }) {
     setTag(null);
     setBlobUrl(null);
     setError(null);
+    setErrorStatus(null);
     setPendingTag(null);
   }
 
+  // "New lookup" (phones): back to the start screen with nothing picked.
+  function startOver() {
+    resetResult();
+    clearPhoto();
+  }
+
   async function runLookup(detect) {
-    setLoading(true);
+    setLoading('identify');
     resetResult();
 
     try {
@@ -124,18 +134,15 @@ export function UploadForm({ token, onUsageChange }) {
     } catch (detectError) {
       setError(friendlyMessage(detectError, IDENTIFY_FAILED));
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   }
 
   async function handleAnalyse() {
     const file = selectedFile;
-    if (!file) {
-      alert('No file selected!');
-      return;
-    }
+    if (!file) return;
 
-    setLoading(true);
+    setLoading('identify');
     resetResult();
     setConfirmId((id) => id + 1);
 
@@ -147,7 +154,7 @@ export function UploadForm({ token, onUsageChange }) {
       setError(friendlyMessage(detectError, IDENTIFY_FAILED));
       setPendingTag('');
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   }
 
@@ -163,17 +170,24 @@ export function UploadForm({ token, onUsageChange }) {
     );
   }
 
-  // Describing food from scratch - drop any previous photo so the left panel doesn't show a
-  // picture of something else next to the result.
+  // Describing food from scratch - drop any previous photo so it isn't shown next to a result
+  // for something else.
   function handleDescribe(text) {
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    clearPhoto();
     runLookup(() => detectFoodFromText(text, token));
   }
 
+  // Which step the right-hand card (desktop) / the whole screen (phones) is on. null = nothing
+  // started yet, so phones show the start card and desktop shows a placeholder.
+  const step = loading ? 'loading' : pendingTag !== null ? 'confirm' : tag || error ? 'result' : null;
+  const busy = loading !== null;
+  // Wolfram sent back a nutrition image - the cue to point at "Change photo" for the next one.
+  const resultReady = step === 'result' && Boolean(blobUrl);
+
   return (
-    <>
-      <form onSubmit={(event) => event.preventDefault()}>
+    <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+      {/* Start card: pick a photo or describe the food. Phones hide it while a step is showing. */}
+      <Card className={step ? 'hidden lg:flex' : ''}>
         {showTakePhoto && (
           <input
             type="file"
@@ -181,75 +195,149 @@ export function UploadForm({ token, onUsageChange }) {
             capture="environment"
             ref={cameraInputRef}
             onChange={handleFileChange}
-            className="file-input-hidden"
+            className="hidden"
           />
         )}
-        <input
-          type="file"
-          accept="image/*"
-          ref={libraryInputRef}
-          onChange={handleFileChange}
-          className="file-input-hidden"
-        />
-        <div className="photo-source-buttons">
-          {showTakePhoto && (
-            <button type="button" className="photo-source-button" onClick={() => cameraInputRef.current?.click()}>
-              <CameraIcon /> Take Photo
-            </button>
-          )}
-          <button type="button" className="photo-source-button" onClick={() => libraryInputRef.current?.click()}>
-            <LibraryIcon /> Choose from Library
-          </button>
-        </div>
-        <button type="button" onClick={handleAnalyse} disabled={loading}>
-          Analyse My Nutrition!!
-        </button>
-      </form>
+        <input type="file" accept="image/*" ref={libraryInputRef} onChange={handleFileChange} className="hidden" />
 
-      <p className="describe-food-divider">or describe what you're eating</p>
-      <DescribeFood
-        token={token}
-        onSubmit={handleDescribe}
-        disabled={loading}
-        placeholder='e.g. "chicken caesar salad"'
-      />
-
-      <div id="predictions">
-        <div className="food-photo" style={previewUrl ? { backgroundImage: `url(${previewUrl})` } : undefined}>
-          {!previewUrl && (
-            <div className="step">
-              <span>1</span> Upload a Photo
-            </div>
-          )}
-        </div>
-        <div className="nutrition">
-          <div className="step">
-            <span>2</span> Nutrition Analysis
-          </div>
-          <div id="concepts">
-            {loading && <img src={LOADER_SRC} className="loading" alt="Loading" />}
-            {!loading && pendingTag !== null && (
-              <div className="confirm-food">
-                <p>{error ? `${error} Describe it instead:` : 'Looks like:'}</p>
-                <DescribeFood
-                  token={token}
-                  key={confirmId}
-                  initialValue={pendingTag}
-                  onSubmit={handleConfirm}
-                  placeholder="Describe the food in the photo"
-                  submitLabel="Look up nutrition"
-                />
-                <p className="confirm-food-hint">Not right? Edit it first, or add an amount like "2 slices".</p>
+        {/* The photo stays here through the whole lookup (desktop); the step card beside it shows
+            the progress. Change photo / Remove start the next one. */}
+        {previewUrl ? (
+          <>
+            <div className="relative aspect-4/3 max-w-full overflow-hidden rounded-[10px] bg-field">
+              <img src={previewUrl} alt="Your food photo" className="size-full object-cover" />
+              {/* These sit on the photo, so they use fixed see-through plum / red with white text rather
+                  than the theme colours. */}
+              <div className="absolute right-2 bottom-2 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => libraryInputRef.current?.click()}
+                  disabled={busy}
+                  className={`cursor-pointer rounded-full bg-[#5b1a74]/75 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm hover:bg-[#5b1a74]/90 ${
+                    resultReady ? 'animate-nudge motion-reduce:animate-none' : ''
+                  }`}
+                >
+                  Change photo
+                </button>
+                {/* Back to the start card, where the describe box is. */}
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  disabled={busy}
+                  className="cursor-pointer rounded-full bg-[#c8283f]/75 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm hover:bg-[#c8283f]/90"
+                >
+                  Remove
+                </button>
               </div>
+            </div>
+            {/* Only before it's been analysed - afterwards the step card has the next action. */}
+            {step === null && (
+              <>
+                <Button onClick={handleAnalyse} disabled={busy} className="w-full">
+                  Analyse photo
+                </Button>
+                <p className="flex items-center gap-2 text-xs text-sub before:size-2 before:shrink-0 before:rounded-full before:bg-ok">
+                  Identifying the photo doesn't use a lookup
+                </p>
+              </>
             )}
-            {!loading && pendingTag === null && (
-              <NutritionResult tag={tag} blobUrl={blobUrl} error={error} onEnlarge={setLightboxSrc} />
+          </>
+        ) : (
+          <>
+            <div
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={handleDrop}
+              className="flex flex-col items-center gap-3 rounded-[10px] border border-dashed border-sub px-3 py-5 text-center text-sub lg:py-9"
+            >
+              {showTakePhoto ? <CameraIcon className="size-8 text-brand" /> : <UploadIcon className="size-8 text-brand" />}
+              <span className="font-bold text-ink">
+                {showTakePhoto ? 'Snap or pick a photo of your food' : 'Drag a photo of your food here'}
+              </span>
+              <div className="flex w-full justify-center gap-2">
+                {showTakePhoto && (
+                  <Button className="flex-1" onClick={() => cameraInputRef.current?.click()} disabled={busy}>
+                    <CameraIcon /> Take photo
+                  </Button>
+                )}
+                <Button
+                  variant={showTakePhoto ? 'ghost' : 'primary'}
+                  className={showTakePhoto ? 'flex-1' : ''}
+                  onClick={() => libraryInputRef.current?.click()}
+                  disabled={busy}
+                >
+                  <ImageIcon /> {showTakePhoto ? 'Library' : 'Choose a photo'}
+                </Button>
+              </div>
+            </div>
+            <OrDivider>or describe it</OrDivider>
+            <DescribeFood
+              token={token}
+              onSubmit={handleDescribe}
+              disabled={busy}
+              placeholder='e.g. "chicken caesar salad"'
+            />
+          </>
+        )}
+      </Card>
+
+      {/* Current step: identifying/looking up, confirming a photo guess, or the result. */}
+      <Card className={step ? '' : 'hidden lg:flex'} aria-live="polite">
+        {step === null && (
+          <p className="py-10 text-center text-sm text-sub">Your nutrition facts will show up here.</p>
+        )}
+
+        {step === 'loading' && <Spinner label={LOADING_LABELS[loading]} />}
+
+        {step === 'confirm' && (
+          <>
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Your food photo"
+                className="aspect-4/3 w-full rounded-[10px] object-cover lg:hidden"
+              />
             )}
-          </div>
-        </div>
-      </div>
+            <p className={error ? 'text-sm text-danger' : 'text-xs font-bold tracking-wider text-sub uppercase'}>
+              {error ? `${error} Describe it instead:` : 'Looks like:'}
+            </p>
+            <DescribeFood
+              token={token}
+              key={confirmId}
+              initialValue={pendingTag}
+              onSubmit={handleConfirm}
+              placeholder="Describe the food in the photo"
+              ariaLabel="Food in the photo"
+              submitLabel="Look up nutrition"
+            />
+            <p className="text-xs text-sub">Not right? Edit it first, or add an amount like "2 slices".</p>
+          </>
+        )}
+
+        {step === 'result' &&
+          (error ? (
+            <div className="flex flex-col gap-2 py-4">
+              <p role="alert" className="text-danger">
+                {error}
+              </p>
+              {errorStatus === 429 && (
+                <p className="text-sm text-sub">
+                  <LinkButton onClick={onOpenSettings}>Open Settings</LinkButton> to add your own Wolfram Alpha App
+                  ID.
+                </p>
+              )}
+            </div>
+          ) : (
+            <NutritionResult tag={tag} blobUrl={blobUrl} onEnlarge={setLightboxSrc} />
+          ))}
+
+        {(step === 'result' || step === 'confirm') && (
+          <Button variant="ghost" className="w-full lg:hidden" onClick={startOver}>
+            <PlusIcon /> New lookup
+          </Button>
+        )}
+      </Card>
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
-    </>
+    </div>
   );
 }

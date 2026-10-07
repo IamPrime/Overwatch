@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { transcribeAudio } from '../lib/api';
 import { isSilent, MAX_RECORDING_SECONDS, recordingToWhisperSamples } from '../lib/audio';
 import { friendlyMessage } from '../lib/errors';
+import { Button, inputClass } from './ui';
+import { MicIcon } from './icons';
 
 // Voice input records the clip here and transcribes it with Whisper on our server, rather than
 // using the browser's built-in speech recognition - that only works reliably in Chrome and Safari
@@ -25,16 +27,6 @@ function silentMessage(deviceLabel) {
   return `Didn't catch anything from "${deviceLabel}". If that's the wrong microphone, pick another in your browser's site settings or Windows sound settings, then try again.`;
 }
 
-function MicIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="2" width="6" height="12" rx="3" />
-      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
-      <line x1="12" y1="18" x2="12" y2="22" />
-    </svg>
-  );
-}
-
 // Text box + optional mic for describing food in words - used both as an alternative to uploading
 // a photo and to confirm/edit a photo detection before it's looked up. A transcript only fills the
 // box (rather than auto-submitting) so the user can fix a mis-hearing before looking it up.
@@ -46,6 +38,7 @@ export function DescribeFood({
   initialValue = '',
   autoFocus = false,
   submitLabel = 'Look it up',
+  ariaLabel = 'Describe your food',
 }) {
   const [text, setText] = useState(initialValue);
   const [voiceState, setVoiceState] = useState('idle'); // 'idle' | 'recording' | 'transcribing'
@@ -141,14 +134,18 @@ export function DescribeFood({
     transcribing: 'Transcribing…',
   }[voiceState] || placeholder;
 
+  const recording = voiceState === 'recording';
+
   return (
-    <form className="describe-food" onSubmit={handleSubmit}>
-      <div className="describe-food-row">
+    <form className="flex flex-col gap-2.5" onSubmit={handleSubmit}>
+      <div className="flex items-center gap-2">
         <input
           type="text"
+          className={inputClass}
           value={voiceState === 'idle' ? text : ''}
           onChange={(event) => setText(event.target.value)}
           placeholder={placeholderText}
+          aria-label={ariaLabel}
           maxLength={300}
           autoFocus={autoFocus}
           disabled={disabled || voiceState !== 'idle'}
@@ -156,20 +153,33 @@ export function DescribeFood({
         {hasMic && (
           <button
             type="button"
-            className={`mic-button${voiceState === 'recording' ? ' listening' : ''}`}
+            className={`grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              recording
+                ? 'animate-pulse border-danger bg-danger text-white motion-reduce:animate-none'
+                : 'border-rule bg-surface text-ink hover:bg-brand hover:text-brand-ink'
+            }`}
             onClick={toggleRecording}
             disabled={disabled || voiceState === 'transcribing'}
-            aria-label={voiceState === 'recording' ? 'Stop recording' : 'Describe your food by voice'}
-            title={voiceState === 'recording' ? 'Stop recording' : 'Speak instead of typing'}
+            aria-label={recording ? 'Stop recording' : 'Describe your food by voice'}
+            title={recording ? 'Stop recording' : 'Speak instead of typing'}
           >
             <MicIcon />
           </button>
         )}
       </div>
-      {voiceError && <p className="describe-food-error">{voiceError}</p>}
-      <button type="submit" className="describe-food-submit" disabled={disabled || voiceState !== 'idle' || !text.trim()}>
+      {voiceError && (
+        <p role="alert" className="text-sm text-danger">
+          {voiceError}
+        </p>
+      )}
+      <Button
+        type="submit"
+        variant="gold"
+        className="w-full"
+        disabled={disabled || voiceState !== 'idle' || !text.trim()}
+      >
         {submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }

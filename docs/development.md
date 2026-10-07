@@ -161,13 +161,13 @@ npm run lint --prefix frontend   # oxlint
 | [`server.js`](../server.js) | The API server: auth, food detection, transcription, the food-only check, Wolfram lookups and usage, and serving the built frontend |
 | [`scripts/dev.js`](../scripts/dev.js) | `npm run dev`: picks the API port and starts the server and frontend together |
 | [`test/`](../test) | API server tests: `server.test.js` (unit), `live/` (real models) |
-| [`frontend/src/App.jsx`](../frontend/src/App.jsx) | Top-level screen: login, the main form, settings, sign-out |
+| [`frontend/src/App.jsx`](../frontend/src/App.jsx) | App shell: login gate, header with usage, Home and Settings tabs (bottom bar on phones, top nav on desktop) |
 | [`frontend/src/components/UploadForm.jsx`](../frontend/src/components/UploadForm.jsx) | Photo upload, the describe box, the confirm step and the result panel |
 | [`frontend/src/components/DescribeFood.jsx`](../frontend/src/components/DescribeFood.jsx) | Text box with mic: recording, transcription and voice errors |
-| [`frontend/src/components/`](../frontend/src/components) | Also `AuthPanel` (login), `SettingsPanel` (personal Wolfram key and usage), `NutritionResult`, `Lightbox` (enlarged image) |
+| [`frontend/src/components/`](../frontend/src/components) | Also `AuthPanel` (login), `SettingsPanel` (the Settings tab: usage, personal Wolfram key, Appearance, sign out), `NutritionResult`, `Lightbox` and `Dialog` (native `<dialog>` modals), `ui.jsx` (shared Tailwind buttons, cards and fields) and `icons.jsx` |
 | [`frontend/src/lib/api.js`](../frontend/src/lib/api.js) | Every call to the API server |
 | [`frontend/src/lib/audio.js`](../frontend/src/lib/audio.js) | Decoding recordings to 16 kHz for Whisper, and the silence check |
-| [`frontend/src/hooks/`](../frontend/src/hooks) | Session (`useAuth`), Wolfram usage, device type, and installed-PWA detection (`useStandalone`) |
+| [`frontend/src/hooks/`](../frontend/src/hooks) | Session (`useAuth`), Wolfram usage, light/dark choice (`useAppearance`), device type, and installed-PWA detection (`useStandalone`) |
 | [`frontend/vite.config.js`](../frontend/vite.config.js) | Dev server `/api` proxy, PWA manifest and service worker, test setup |
 | [`supabase/migrations/`](../supabase/migrations) | Database schema: Wolfram key and usage tables, security policies, usage functions |
 | [`netlify.toml`](../netlify.toml) | Netlify build settings and Node version |
