@@ -1,6 +1,6 @@
 # Development
 
-Setting up, running and testing Overwatch on your own machine. For how the pieces fit together see [how-it-works.md](how-it-works.md); for hosting see [deployment.md](deployment.md).
+Setting up, running and testing Angalia on your own machine. For how the pieces fit together see [how-it-works.md](how-it-works.md); for hosting see [deployment.md](deployment.md).
 
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)

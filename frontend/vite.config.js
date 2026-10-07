@@ -33,8 +33,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
       },
       manifest: {
-        name: 'Overwatch - GrubWatch Food & Nutrition Analysis',
-        short_name: 'GrubWatch',
+        name: 'Angalia - Food & Nutrition Analysis',
+        short_name: 'Angalia',
         start_url: '/',
         scope: '/',
         display: 'standalone',

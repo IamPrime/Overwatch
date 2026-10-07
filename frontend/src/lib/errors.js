@@ -6,7 +6,7 @@
 // An error whose message is safe to show to the user unchanged.
 export class FriendlyError extends Error {}
 
-export const NETWORK_MESSAGE = "Couldn't reach Overwatch - check your internet connection and try again.";
+export const NETWORK_MESSAGE = "Couldn't reach Angalia - check your internet connection and try again.";
 
 export function friendlyMessage(err, fallback) {
   return err instanceof FriendlyError ? err.message : fallback;

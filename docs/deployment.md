@@ -1,6 +1,6 @@
 # Deployment
 
-How Overwatch is hosted, how a change gets to production, and what to check before and after. For local setup see [development.md](development.md).
+How Angalia is hosted, how a change gets to production, and what to check before and after. For local setup see [development.md](development.md).
 
 - [Where it runs](#where-it-runs)
 - [Releasing a change](#releasing-a-change)
@@ -99,7 +99,7 @@ Changes that needed **no** settings changes: the photo confirm step, text and vo
 1. **Render logs** (the service → Logs) should end with:
 
    ```text
-   Overwatch server running at http://localhost:<port>
+   Angalia server running at http://localhost:<port>
    Food detector: Purdue GenAI Studio (llama4:latest, fallback gemma4:26b-a4b), Gemini fallback (gemini-flash-latest)
    ```
 

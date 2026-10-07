@@ -43,7 +43,7 @@ describe.each(Object.entries(CALLS))('%s', (_name, call) => {
   });
 
   test("the server's own message is shown when it sends one", async () => {
-    const serverMessage = 'That doesn’t sound like food or drink - Overwatch can only look up nutrition for things you eat or drink.';
+    const serverMessage = 'That doesn’t sound like food or drink - Angalia can only look up nutrition for things you eat or drink.';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ error: serverMessage }, { status: 422 })));
     expect((await errorFrom(call)).message).toBe(serverMessage);
   });

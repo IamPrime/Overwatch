@@ -5,7 +5,7 @@
 // If PORT is set (in .env or the shell), that port is used as-is and it's an error if it's taken.
 // Otherwise the first free port from 3000 up is used - something else on this machine (e.g. a
 // Docker container) holding 3000 used to mean the frontend's /api calls silently reached that
-// instead of Overwatch. Production (`npm start` on Render) never goes through this script.
+// instead of Angalia. Production (`npm start` on Render) never goes through this script.
 require('dotenv').config();
 
 const net = require('net');

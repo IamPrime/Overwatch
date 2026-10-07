@@ -1,6 +1,6 @@
 # How it works
 
-How Overwatch turns a photo, a typed description or a voice clip into a nutrition-facts image, and why it's built the way it is. For setup see [development.md](development.md); for hosting see [deployment.md](deployment.md).
+How Angalia turns a photo, a typed description or a voice clip into a nutrition-facts image, and why it's built the way it is. For setup see [development.md](development.md); for hosting see [deployment.md](deployment.md).
 
 - [Overview](#overview)
 - [Photo flow](#photo-flow)
@@ -86,7 +86,7 @@ Everything runs on the server through [`@huggingface/transformers`](https://www.
 
 ## Food and drink only
 
-Wolfram's Simple API answers anything: "hydrogen peroxide" returned chemistry facts. Overwatch makes sure only food and drink reach it, in two layers.
+Wolfram's Simple API answers anything: "hydrogen peroxide" returned chemistry facts. Angalia makes sure only food and drink reach it, in two layers.
 
 ### 1. The AI decides
 
@@ -107,7 +107,7 @@ When a detect route approves a tag, it returns a `tagToken`: an HMAC signature o
 
 ### No shortened retries
 
-The server only ever sends Wolfram the exact approved tag. An earlier version retried failed lookups with just the last word, which looked up text the AI never approved: "chloroquine tablet" became "tablet" (Wolfram answered about tablet computers) and "check in salad" became "salad". If Wolfram doesn't understand an approved tag, the user gets a `422` saying it doesn't appear to be a food or drink Overwatch can find nutrition facts for, and is told to describe it differently.
+The server only ever sends Wolfram the exact approved tag. An earlier version retried failed lookups with just the last word, which looked up text the AI never approved: "chloroquine tablet" became "tablet" (Wolfram answered about tablet computers) and "check in salad" became "salad". If Wolfram doesn't understand an approved tag, the user gets a `422` saying it doesn't appear to be a food or drink Angalia can find nutrition facts for, and is told to describe it differently.
 
 ## How Wolfram queries are built
 

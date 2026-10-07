@@ -20,7 +20,7 @@ async function readBody(response, read) {
   try {
     return await read(response);
   } catch {
-    throw new FriendlyError('Overwatch sent back something unexpected - please try again.');
+    throw new FriendlyError('Angalia sent back something unexpected - please try again.');
   }
 }
 
@@ -117,7 +117,7 @@ export async function getWolframUsage(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
-    throw new FriendlyError(await readErrorMessage(response, 'Could not fetch your Overwatch usage.'));
+    throw new FriendlyError(await readErrorMessage(response, 'Could not fetch your Angalia usage.'));
   }
   return readBody(response, (r) => r.json()); // { hasOwnKey, used, limit, remaining }
 }

@@ -456,7 +456,7 @@ app.post('/api/detect-food-text', requireAuth, async (req, res) => {
       ? await detectFoodViaLocalDescription(description)
       : await detectFoodViaDescription(description);
 
-    sendDetectedTag(req, res, tag, "That doesn't sound like food or drink - Overwatch can only look up nutrition for things you eat or drink.");
+    sendDetectedTag(req, res, tag, "That doesn't sound like food or drink - Angalia can only look up nutrition for things you eat or drink.");
   } catch (err) {
     console.error('Food description lookup failed:', err);
     res.status(502).json({ error: 'Could not identify the food from that description.' });
@@ -625,7 +625,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
       appId = byok.wolfram_app_id;
     } else {
       if (!WOLFRAM_APP_ID) {
-        return res.status(500).json({ error: "Overwatch's nutrition lookup isn't configured on the server." });
+        return res.status(500).json({ error: "Angalia's nutrition lookup isn't configured on the server." });
       }
 
       // Charge-on-attempt (before calling Wolfram) so the cap can't be raced around the
@@ -650,7 +650,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
     }
   } catch (err) {
     console.error('Failed to resolve Wolfram App ID / usage:', err);
-    return res.status(500).json({ error: 'Could not verify your Overwatch usage right now.' });
+    return res.status(500).json({ error: 'Could not verify your Angalia usage right now.' });
   }
 
   // Gives back a charged shared-key lookup that never got the user a nutrition image, whichever way
@@ -678,13 +678,13 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
     if (!result.image) {
       await refundLookup();
       if (result.isTimeout) {
-        return res.status(504).json({ error: 'Overwatch is taking too long to respond right now - please try again.' });
+        return res.status(504).json({ error: 'Angalia is taking too long to respond right now - please try again.' });
       }
       // Wolfram not understanding a tag the model approved usually means it isn't really a food or
       // drink after all (or was misheard/mistyped), so say that rather than a bare "not found".
       return res.status(422).json({
         error:
-          `"${tag}" doesn't appear to be a food or drink that Overwatch can find nutrition facts for. ` +
+          `"${tag}" doesn't appear to be a food or drink that Angalia can find nutrition facts for. ` +
           'If it is one, try describing it differently - e.g. its common name, or with an amount like "1 cup".',
       });
     }
@@ -698,7 +698,7 @@ app.get('/api/nutrition-image', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Wolfram Alpha request failed:', err);
     await refundLookup();
-    res.status(502).json({ error: "Failed to reach Overwatch's nutrition lookup service." });
+    res.status(502).json({ error: "Failed to reach Angalia's nutrition lookup service." });
   }
 });
 
@@ -727,7 +727,7 @@ app.get('/api/wolfram-usage', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('Failed to fetch Wolfram usage:', err);
-    res.status(500).json({ error: 'Could not fetch your Overwatch usage right now.' });
+    res.status(500).json({ error: 'Could not fetch your Angalia usage right now.' });
   }
 });
 
@@ -792,7 +792,7 @@ app.delete('/api/wolfram-key', requireAuth, async (req, res) => {
 // Anything under /api that no route above handled - JSON like every other API answer, rather than
 // Express's default HTML "Cannot GET" page.
 app.use('/api', (req, res) => {
-  res.status(404).json({ error: "That isn't something Overwatch can do - try refreshing the app." });
+  res.status(404).json({ error: "That isn't something Angalia can do - try refreshing the app." });
 });
 
 // Last stop for every error no route handled itself: unreadable or oversized request bodies (thrown
@@ -831,7 +831,7 @@ if (require.main === module) {
       );
       process.exit(1);
     }
-    console.log(`Overwatch server running at http://localhost:${port}`);
+    console.log(`Angalia server running at http://localhost:${port}`);
     console.log(`Food detector: ${useLocalModel ? `local (${localModelId})` : `Purdue GenAI Studio (${primaryModel}, fallback ${fallbackModel})${GEMINI_API_KEY ? `, Gemini fallback (${geminiModel})` : ''}`}`);
   });
 }

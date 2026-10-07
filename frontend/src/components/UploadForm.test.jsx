@@ -70,7 +70,7 @@ describe('UploadForm photo confirmation', () => {
 describe('UploadForm non-food input', () => {
   test('shows the server\'s not-food message and never looks anything up', async () => {
     detectFoodFromText.mockRejectedValue(
-      new FriendlyError("That doesn't sound like food or drink - Overwatch can only look up nutrition for things you eat or drink."),
+      new FriendlyError("That doesn't sound like food or drink - Angalia can only look up nutrition for things you eat or drink."),
     );
     render(<UploadForm token="test-token" onUsageChange={vi.fn()} />);
 

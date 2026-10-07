@@ -1,6 +1,6 @@
-# Overwatch frontend
+# Angalia frontend
 
-The Vite + React app (installable as a PWA) for Overwatch. It talks only to the API server in the repo root.
+The Vite + React app (installable as a PWA) for Angalia. It talks only to the API server in the repo root.
 
 Run it from the **repo root** with `npm run dev`, which starts this frontend and the API server together on matching ports. See the main docs:
 

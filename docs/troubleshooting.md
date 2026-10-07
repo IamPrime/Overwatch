@@ -12,11 +12,11 @@ Find the message you're seeing. Messages in the app are quoted exactly; for serv
 
 ## General
 
-### "Couldn't reach Overwatch - check your internet connection and try again."
+### "Couldn't reach Angalia - check your internet connection and try again."
 
 The browser couldn't reach the API server at all. Usually the device is offline, or Render's free tier is still waking up (up to a minute after 15 idle minutes); retry. If it never works, check that Netlify's `VITE_API_BASE` points at the right Render URL and that the Render service is running.
 
-### "Overwatch sent back something unexpected - please try again."
+### "Angalia sent back something unexpected - please try again."
 
 A request succeeded but the reply wasn't what the app expected, typically because `VITE_API_BASE` points at a site that answers with its own page instead of the API. Check `VITE_API_BASE`.
 
@@ -24,7 +24,7 @@ A request succeeded but the reply wasn't what the app expected, typically becaus
 
 An unexpected server error. The details are in the server log, on the line starting `Unhandled error on`.
 
-### "That request couldn't be read - please try again." / "That isn't something Overwatch can do - try refreshing the app."
+### "That request couldn't be read - please try again." / "That isn't something Angalia can do - try refreshing the app."
 
 The server received a malformed request, or one for an API route that doesn't exist. From the app, that usually means an old cached copy talking to a newer server; refresh. Otherwise something is calling the API directly with a bad request.
 
@@ -47,7 +47,7 @@ Every configured model failed. The server log shows one line per model tried:
 
 With `FOOD_DETECTOR=local`, check the log for model download errors; the first request after starting downloads the models.
 
-### "That doesn't look like food or drink - try another photo, or describe what you're eating." / "That doesn't sound like food or drink - Overwatch can only look up nutrition for things you eat or drink."
+### "That doesn't look like food or drink - try another photo, or describe what you're eating." / "That doesn't sound like food or drink - Angalia can only look up nutrition for things you eat or drink."
 
 The AI judged the input not to be food or drink. That's intended for things like cleaning products, medicine, objects, pets or questions. See [Food and drink only](how-it-works.md#food-and-drink-only).
 
@@ -61,7 +61,7 @@ Edit the guess in the *Looks like:* box before pressing **Look up nutrition**; n
 
 ## Nutrition lookups
 
-### `"..." doesn't appear to be a food or drink that Overwatch can find nutrition facts for. If it is one, try describing it differently...`
+### `"..." doesn't appear to be a food or drink that Angalia can find nutrition facts for. If it is one, try describing it differently...`
 
 Wolfram Alpha didn't understand a tag the AI had approved. Usually it isn't really a food or drink, or it was misheard or mistyped (Whisper hearing "chicken salad" as "check in salad"). Rephrasing in the box usually fixes real foods: use the common name, add an amount ("1 cup"), or split very long meals into separate lookups. These failed lookups are refunded.
 
@@ -79,19 +79,19 @@ The lookup didn't carry a valid [tag signature](how-it-works.md#2-the-server-enf
 
 Expected once a user without their own key reaches the daily limit on the shared key. Add a free personal key in Settings, or wait for the next UTC day. The limit is `WOLFRAM_DAILY_FREE_LOOKUPS`.
 
-### "Overwatch is taking too long to respond right now - please try again."
+### "Angalia is taking too long to respond right now - please try again."
 
 Wolfram timed out (30 seconds). Long meals with about 5 or more items occasionally do this; retry, or split the meal. These lookups are refunded.
 
-### "Failed to reach Overwatch's nutrition lookup service."
+### "Failed to reach Angalia's nutrition lookup service."
 
 The server couldn't reach Wolfram at all (network problem or Wolfram outage). Retry later. These lookups are refunded.
 
-### "Overwatch's nutrition lookup isn't configured on the server."
+### "Angalia's nutrition lookup isn't configured on the server."
 
 `WOLFRAM_APP_ID` isn't set. Set it and restart (on Render, save and redeploy).
 
-### "Could not verify your Overwatch usage right now." / "Could not fetch your Overwatch usage right now."
+### "Could not verify your Angalia usage right now." / "Could not fetch your Angalia usage right now."
 
 The server couldn't read or update usage in Supabase. Check that the migrations are applied (the `wolfram_usage` table and `increment_wolfram_usage` function exist; see [Supabase setup](development.md#supabase-setup)) and that `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` belong to the same project.
 
@@ -186,7 +186,7 @@ Either **Anonymous Sign-Ins** isn't enabled in Supabase (Authentication → Prov
 
 ### The app shows "Not Found" or "Payload Too Large", or usage won't load
 
-Requests aren't reaching Overwatch: another program owns the port the frontend is forwarding to (for example a Docker container on 3000). Start everything with `npm run dev` from the repo root, which picks a free port for both halves. Starting Vite alone inside `frontend/` forwards to `PORT` from the root `.env`, or 3000.
+Requests aren't reaching Angalia: another program owns the port the frontend is forwarding to (for example a Docker container on 3000). Start everything with `npm run dev` from the repo root, which picks a free port for both halves. Starting Vite alone inside `frontend/` forwards to `PORT` from the root `.env`, or 3000.
 
 ### `[dev] PORT=3000 (from .env or your shell) is already in use`
 
