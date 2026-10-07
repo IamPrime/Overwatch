@@ -5,6 +5,7 @@ const BUTTON_VARIANTS = {
   primary: 'bg-brand text-brand-ink hover:brightness-110',
   gold: 'bg-gold text-gold-ink hover:brightness-105',
   ghost: 'border border-rule bg-transparent text-ink font-semibold hover:bg-field',
+  danger: 'bg-danger text-brand-ink hover:brightness-110',
 };
 
 const BUTTON_SIZES = {

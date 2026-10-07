@@ -67,7 +67,8 @@ Accounts and per-user Wolfram data live in [Supabase](https://supabase.com/) (Po
 
 1. Create a Supabase project.
 2. **Authentication → Providers** → enable **Anonymous Sign-Ins** (off by default). This is what lets the installed PWA sign in with no password. Because anonymous sign-in needs no verification, a script could otherwise create unlimited accounts to collect fresh free-lookup allowances on the shared `WOLFRAM_APP_ID`. Also enable invisible CAPTCHA or Cloudflare Turnstile there ([Supabase's recommendation](https://supabase.com/docs/guides/auth/auth-anonymous#abuse-prevention-and-rate-limits) for this risk), on top of the default 30-requests-per-hour IP limit.
-3. Apply the migrations (no global install needed; `npx` fetches the CLI):
+3. **Authentication → URL Configuration** → add every address the app runs at to **Redirect URLs**: the Netlify URL, the Render URL and `http://localhost:5173`. Confirmation emails (from **Sign up**, and from a guest's **Create account** in Settings) link back to the address the person was using, and Supabase only sends people back to listed addresses; an unlisted one falls back to the **Site URL**.
+4. Apply the migrations (no global install needed; `npx` fetches the CLI):
 
    ```bash
    npx supabase login
@@ -80,8 +81,8 @@ Accounts and per-user Wolfram data live in [Supabase](https://supabase.com/) (Po
    - `db push` may warn `failed to cache migrations catalog: ... failed to inspect docker image` if Docker isn't running. That's harmless; look for `Finished supabase db push.` and check that `user_wolfram_keys` and `wolfram_usage` appear in the Table Editor.
 
    This creates both tables, their Row Level Security policies, and the `increment_wolfram_usage` / `decrement_wolfram_usage` functions that count free lookups atomically. The comments in the migration explain why its `revoke`/`grant` lines matter.
-4. **Project Settings → API** → copy the Project URL, the `anon` public key and the `service_role` secret key.
-5. Put the URL and `service_role` key in `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), and the URL and `anon` key in `frontend/.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+5. **Project Settings → API** → copy the Project URL, the `anon` public key and the `service_role` secret key.
+6. Put the URL and `service_role` key in `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), and the URL and `anon` key in `frontend/.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 
 **Changing the schema later:**
 

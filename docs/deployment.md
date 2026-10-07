@@ -85,6 +85,8 @@ Code changes deploy on push, but **environment variables are only changed in the
 
 Changes that needed **no** settings changes: the photo confirm step, text and voice input, Whisper, the food-only check and tag signing (its key comes from the existing `SUPABASE_SERVICE_ROLE_KEY`), the quantity and list rules, `npm run dev`, and the Tailwind redesign and rename to Angalia (Tailwind installs and builds with the frontend's other dependencies).
 
+Confirmation emails (**Sign up**, and a guest's **Create account**) need one setting in **Supabase**, not Render or Netlify: Authentication → URL Configuration → **Redirect URLs** must list the Netlify URL and the Render URL, since each link returns to the address the person was using. An unlisted address sends them to the Site URL instead. See [Supabase setup](development.md#supabase-setup).
+
 The Netlify site is still named `grubwatch` (`grubwatch.netlify.app`). Renaming it is optional; if you do, also update `NETLIFY_ORIGIN` on Render (otherwise the API rejects the frontend's requests) and the Supabase Redirect URLs.
 
 ## Free-tier limits

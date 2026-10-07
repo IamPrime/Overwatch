@@ -4,7 +4,7 @@ import { friendlyMessage } from '../lib/errors';
 import { Button, Card, Field, inputClass } from './ui';
 import { Dialog } from './Dialog';
 import { ExternalIcon } from './icons';
-import { APP_NAME } from './Wordmark';
+import { AccountSection } from './AccountSection';
 
 const SETTINGS_FAILED = "Couldn't update your Wolfram Alpha settings - please try again.";
 
@@ -82,7 +82,17 @@ function AppIdDialog({ open, onClose, onSave, busy, error }) {
   );
 }
 
-export function SettingsPanel({ token, usage, onUsageChange, appearance, onAppearanceChange, user, onSignOut }) {
+export function SettingsPanel({
+  token,
+  usage,
+  onUsageChange,
+  appearance,
+  onAppearanceChange,
+  user,
+  onSignOut,
+  onAddEmail,
+  onSetPassword,
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -199,19 +209,7 @@ export function SettingsPanel({ token, usage, onUsageChange, appearance, onAppea
       </Card>
 
       <SectionTitle>Account</SectionTitle>
-      <Card>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="font-bold">{user?.is_anonymous ? 'Guest' : 'Signed in'}</div>
-            <div className="text-xs wrap-anywhere text-sub">
-              {user?.is_anonymous ? `Using ${APP_NAME} without an account` : user?.email}
-            </div>
-          </div>
-          <button type="button" onClick={onSignOut} className="cursor-pointer font-bold text-danger">
-            Sign out
-          </button>
-        </div>
-      </Card>
+      <AccountSection user={user} onSignOut={onSignOut} onAddEmail={onAddEmail} onSetPassword={onSetPassword} />
 
       <AppIdDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSave={handleSave} busy={busy} error={error} />
     </div>

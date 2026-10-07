@@ -49,9 +49,15 @@ export function useAuth() {
     return !signInError;
   }
 
+  // Confirmation links (sign-up and guest-to-account) return to the address the person is using -
+  // Netlify, Render or localhost - so each must be in Supabase's Redirect URLs list.
   async function signUp(email, password) {
     setError(null);
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
     if (signUpError) setError(authErrorMessage(signUpError));
     return !signUpError;
   }
@@ -67,5 +73,35 @@ export function useAuth() {
     await supabase.auth.signOut();
   }
 
-  return { session, loading, error, signInWithPassword, signUp, continueWithoutAccount, signOut };
+  // Turning a guest (anonymous) session into a real account keeps the same user, so their saved
+  // Wolfram App ID and today's usage carry over. Supabase only allows a password once the
+  // account has an email, and with email confirmation on that's after the confirmation link is
+  // clicked - so this is two steps. password_set in user_metadata tracks whether step two is
+  // still owed (Settings prompts for it). Returns { error } or { confirmed } - confirmed is false
+  // when Supabase sent a confirmation email instead of applying the email straight away.
+  async function addEmailToGuest(email) {
+    const { data, error: updateError } = await supabase.auth.updateUser(
+      { email, data: { password_set: false } },
+      { emailRedirectTo: window.location.origin },
+    );
+    if (updateError) return { error: authErrorMessage(updateError) };
+    return { confirmed: data.user?.email === email };
+  }
+
+  async function setPassword(password) {
+    const { error: updateError } = await supabase.auth.updateUser({ password, data: { password_set: true } });
+    return updateError ? { error: authErrorMessage(updateError) } : {};
+  }
+
+  return {
+    session,
+    loading,
+    error,
+    signInWithPassword,
+    signUp,
+    continueWithoutAccount,
+    signOut,
+    addEmailToGuest,
+    setPassword,
+  };
 }

@@ -24,7 +24,17 @@ function UsageChip({ usage }) {
 }
 
 function App() {
-  const { session, loading, error, signInWithPassword, signUp, continueWithoutAccount, signOut } = useAuth();
+  const {
+    session,
+    loading,
+    error,
+    signInWithPassword,
+    signUp,
+    continueWithoutAccount,
+    signOut,
+    addEmailToGuest,
+    setPassword,
+  } = useAuth();
   const token = session?.access_token;
   const { usage, refresh: refreshUsage, applyPartial } = useWolframUsage(token);
   const [appearance, setAppearance] = useAppearance();
@@ -95,6 +105,8 @@ function App() {
             onAppearanceChange={setAppearance}
             user={session.user}
             onSignOut={signOut}
+            onAddEmail={addEmailToGuest}
+            onSetPassword={setPassword}
           />
         </section>
       </main>

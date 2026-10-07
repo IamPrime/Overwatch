@@ -14,6 +14,7 @@ vi.mock('../lib/supabaseClient', () => ({
       signUp: vi.fn(),
       signInAnonymously: vi.fn(),
       signOut: vi.fn(),
+      updateUser: vi.fn(),
     },
   },
 }));
@@ -53,5 +54,67 @@ describe('useAuth error messages', () => {
     ['sign up, unrecognized error', SIGN_UP, supabaseError('AuthApiError', 'Request failed with status code 503', { status: 503 })],
   ])('%s', async (_case, action, error) => {
     expectFriendly(await errorAfter(action, error));
+  });
+});
+
+describe('useAuth guest to account', () => {
+  async function renderReady() {
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    return result;
+  }
+
+  // Supabase either sends a confirmation email (email not applied yet, held in new_email) or, with
+  // confirmation turned off, applies it straight away.
+  test.each([
+    ['confirmation email sent', { email: null, new_email: 'sam@example.com' }, false],
+    ['applied straight away', { email: 'sam@example.com' }, true],
+  ])('adding an email to the same user (%s) flags the password as still owed', async (_case, user, confirmed) => {
+    supabase.auth.updateUser.mockResolvedValue({ data: { user }, error: null });
+    const result = await renderReady();
+
+    const outcome = await act(() => result.current.addEmailToGuest('sam@example.com'));
+
+    expect(supabase.auth.updateUser).toHaveBeenCalledWith(
+      { email: 'sam@example.com', data: { password_set: false } },
+      expect.objectContaining({ emailRedirectTo: expect.any(String) }),
+    );
+    expect(outcome).toEqual({ confirmed });
+  });
+
+  test('an email that already has an account gets a plain message', async () => {
+    supabase.auth.updateUser.mockResolvedValue({
+      data: {},
+      error: supabaseError('AuthApiError', 'A user with this email address has already been registered', { status: 422, code: 'email_exists' }),
+    });
+    const result = await renderReady();
+
+    const { error } = await act(() => result.current.addEmailToGuest('taken@example.com'));
+    expect(error).toMatch(/already exists/);
+    expectFriendly(error);
+  });
+
+  test('setting the password clears the owed flag', async () => {
+    supabase.auth.updateUser.mockResolvedValue({ data: { user: {} }, error: null });
+    const result = await renderReady();
+
+    expect(await act(() => result.current.setPassword('hunter22'))).toEqual({});
+    expect(supabase.auth.updateUser).toHaveBeenCalledWith({ password: 'hunter22', data: { password_set: true } });
+  });
+});
+
+describe('useAuth sign-up', () => {
+  test("the confirmation link returns to the address the person signed up on", async () => {
+    supabase.auth.signUp.mockResolvedValue({ data: {}, error: null });
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(() => result.current.signUp('sam@example.com', 'hunter22'));
+
+    expect(supabase.auth.signUp).toHaveBeenCalledWith({
+      email: 'sam@example.com',
+      password: 'hunter22',
+      options: { emailRedirectTo: window.location.origin },
+    });
   });
 });
