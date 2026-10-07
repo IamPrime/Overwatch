@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Angalia Redesign Mockups</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Libre+Franklin:wght@400;500;700;900&family=Sansita+Swashed:wght@600;800&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: page chrome (neutral, plum-biased) wraps phone mockups, then desktop browser mockups, then a plain spec */
+:root {
+  --bg: #f6f5f8; --fg: #1f1a24; --muted: #6b6373; --line: #dfdbe4; --panel: #ffffff; --accent: #5b1a74; --frame: #1f1a24; --code-bg: #f0edf3;
+  --f-ui: "Figtree", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131016; --fg: #ece7f1; --muted: #a399ad; --line: #2e2734; --panel: #1b171f; --accent: #c58be0; --frame: #3a3240; --code-bg: #1f1a24; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131016; --fg: #ece7f1; --muted: #a399ad; --line: #2e2734; --panel: #1b171f; --accent: #c58be0; --frame: #3a3240; --code-bg: #1f1a24; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--f-ui); padding: 32px 16px 64px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px; }
+header.intro { max-width: 68ch; display: flex; flex-direction: column; gap: 10px; }
+header.intro h1 { font-size: 1.9rem; line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+header.intro p { margin: 0; color: var(--muted); }
+.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; }
+h2.part { font-size: 1.3rem; margin: 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h2.part small { font-size: 0.85rem; font-weight: 400; color: var(--muted); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); padding-block: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--panel); }
+.seg button { font: 600 0.85rem var(--f-ui); color: var(--muted); background: none; border: 0; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ctl-label { font-size: 0.8rem; color: var(--muted); margin-right: 8px; }
+.dir-note { color: var(--muted); font-size: 0.9rem; max-width: 70ch; margin: -20px 0 0; }
+
+.phones { display: flex; flex-wrap: wrap; gap: 32px 24px; justify-content: center; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+figcaption { font-size: 0.82rem; color: var(--muted); text-align: center; max-width: 290px; }
+figcaption b { color: var(--fg); display: block; font-size: 0.88rem; }
+.desk-fig figcaption { max-width: 70ch; }
+
+/* ---------- App mock tokens (switch by direction + theme) ---------- */
+.app {
+  --app-bg: #f6f1fa; --surface: #ffffff; --ink: #2a1838; --sub: #6d5a7d; --brand: #5b1a74; --brand-ink: #ffffff;
+  --gold: #d9a21b; --gold-ink: #2a1838; --rule: #e6dcee; --field: #faf7fc; --danger: #c8283f;
+  --radius: 14px; --rule-w: 1px;
+  --f-word: "Sansita Swashed", Georgia, serif; --f-head: "Figtree", system-ui, sans-serif; --f-body: "Figtree", system-ui, sans-serif;
+  background: var(--app-bg); color: var(--ink); font-family: var(--f-body); font-size: 13.5px; line-height: 1.45; position: relative; overflow: hidden;
+}
+.mock-dark .app {
+  --app-bg: #170d1f; --surface: #22152d; --ink: #f3eaf8; --sub: #b4a3c2; --brand: #c58be0; --brand-ink: #1a0f22;
+  --gold: #e8b53a; --gold-ink: #1a0f22; --rule: #3a2a47; --field: #1c1125; --danger: #ff6b7f; color-scheme: dark;
+}
+.dir-b .app {
+  --app-bg: #ffffff; --surface: #ffffff; --ink: #111111; --sub: #4f4f4f; --brand: #111111; --brand-ink: #ffffff;
+  --gold: #f2b705; --gold-ink: #111111; --rule: #111111; --field: #ffffff; --danger: #c41d1d;
+  --radius: 4px; --rule-w: 2px;
+  --f-word: "Libre Franklin", Arial, sans-serif; --f-head: "Libre Franklin", Arial, sans-serif; --f-body: "Libre Franklin", Arial, sans-serif;
+}
+.dir-b.mock-dark .app {
+  --app-bg: #0f0f0f; --surface: #161616; --ink: #f2f2f2; --sub: #a8a8a8; --brand: #f2f2f2; --brand-ink: #111111;
+  --gold: #f5c22a; --gold-ink: #111111; --rule: #f2f2f2; --field: #161616; --danger: #ff6b6b;
+}
+.phone { width: 300px; max-width: 100%; height: 620px; border-radius: 38px; border: 9px solid var(--frame); display: flex; flex-direction: column; }
+
+.notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 84px; height: 20px; border-radius: 12px; background: var(--frame); z-index: 5; }
+.topbar { padding: 38px 18px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wordmark { font-family: var(--f-word); font-weight: 800; font-size: 1.35rem; color: var(--brand); letter-spacing: -0.01em; }
+.dir-b .wordmark { font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.2rem; }
+.chip { font-size: 0.72rem; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dir-b .chip { border-radius: 2px; background: var(--gold); color: var(--gold-ink); }
+
+.content { flex: 1; overflow: hidden; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.h-screen { font-family: var(--f-head); font-weight: 800; font-size: 1.35rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+.dir-b .h-screen { font-weight: 900; letter-spacing: -0.015em; }
+.lede { margin: -6px 0 0; color: var(--sub); font-size: 0.85rem; }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 0 var(--rule), 0 6px 18px -12px rgb(40 10 60 / 0.35); }
+.dir-b .card { box-shadow: none; border: var(--rule-w) solid var(--rule); }
+.mock-dark .card { box-shadow: 0 0 0 1px var(--rule); }
+.dir-b.mock-dark .card { box-shadow: none; }
+
+.photo { aspect-ratio: 4 / 3; max-width: 100%; border-radius: calc(var(--radius) - 4px); overflow: hidden; position: relative; background: #e9e2d6; }
+.photo svg { width: 100%; height: 100%; display: block; }
+.photo .swap { position: absolute; right: 8px; bottom: 8px; font-size: 0.7rem; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: rgb(0 0 0 / 0.6); color: #fff; }
+.drop { border: var(--rule-w) dashed var(--sub); border-radius: calc(var(--radius) - 4px); padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: var(--sub); }
+.dir-b .drop { border-color: var(--rule); }
+.drop > svg { width: 30px; height: 30px; color: var(--brand); }
+.drop .t { color: var(--ink); font-weight: 700; }
+
+.src-row { display: flex; gap: 8px; width: 100%; }
+.btn { font: 700 0.85rem var(--f-body); border-radius: calc(var(--radius) - 4px); padding: 11px 14px; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+.btn-primary { background: var(--brand); color: var(--brand-ink); width: 100%; }
+.btn-gold { background: var(--gold); color: var(--gold-ink); width: 100%; }
+.btn-ghost { background: transparent; color: var(--ink); border: var(--rule-w) solid var(--rule); width: 100%; font-weight: 600; }
+.src-row .btn { flex: 1; padding: 9px 10px; font-size: 0.8rem; }
+.btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+.dir-b .btn { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 900; }
+.dir-b .btn-ghost { font-weight: 700; }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.or { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 0.75rem; }
+.or::before, .or::after { content: ""; flex: 1; height: var(--rule-w); background: var(--rule); }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 0.72rem; font-weight: 700; color: var(--sub); }
+.dir-b .field label { text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }
+.input { font: 500 0.88rem var(--f-body); color: var(--ink); background: var(--field); border: var(--rule-w) solid var(--rule); border-radius: calc(var(--radius) - 6px); padding: 9px 11px; width: 100%; min-width: 0; }
+.input-row { display: flex; gap: 6px; align-items: center; position: relative; }
+.icon-btn { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; border: var(--rule-w) solid var(--rule); background: var(--surface); color: var(--ink); display: grid; place-items: center; }
+.dir-b .icon-btn { border-radius: 4px; }
+.icon-btn svg { width: 16px; height: 16px; }
+.eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--sub); display: grid; }
+.eye svg { width: 18px; height: 18px; }
+.hint { font-size: 0.74rem; color: var(--sub); margin: 0; }
+.link { color: var(--brand); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; padding: 0; cursor: pointer; }
+.link svg { width: 11px; height: 11px; vertical-align: -1px; margin-left: 2px; }
+
+.guess { display: flex; flex-direction: column; gap: 8px; }
+.tag-label { font-size: 0.72rem; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.08em; }
+.free { font-size: 0.72rem; color: var(--sub); display: flex; gap: 6px; align-items: center; }
+.free::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2e9e5b; flex-shrink: 0; }
+
+/* The Wolfram result is an image, so it stays black-on-white in both themes */
+.label-img { background: #fff; color: #000; border: 1px solid #000; padding: 8px 10px; font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; line-height: 1.3; border-radius: 2px; cursor: zoom-in; }
+.label-img .lt { font-weight: 900; font-size: 19px; line-height: 1; border-bottom: 1px solid #000; padding-bottom: 3px; }
+.label-img .row { display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0; font-variant-numeric: tabular-nums; }
+.label-img .thick { border-bottom-width: 6px; }
+.label-img .cal { font-weight: 900; font-size: 15px; }
+.label-img .ind { padding-left: 10px; }
+.label-img .last { border-bottom: 0; }
+.result-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.result-head h3 { margin: 0; font-family: var(--f-head); font-weight: 800; font-size: 1.05rem; }
+.result-head span { font-size: 0.7rem; color: var(--sub); white-space: nowrap; }
+
+/* Bottom tab bar (phone) */
+.tabs { display: flex; border-top: var(--rule-w) solid var(--rule); background: var(--surface); padding: 6px 10px 16px; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.68rem; font-weight: 700; color: var(--sub); padding: 4px; }
+.tab svg { width: 20px; height: 20px; }
+.tab.on { color: var(--brand); }
+.dir-b .tab.on { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+
+/* Settings */
+.meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 20%, var(--field)); overflow: hidden; }
+.meter > i { display: block; height: 100%; width: 70%; background: var(--gold); border-radius: inherit; }
+.dir-b .meter { border-radius: 0; border: 1px solid var(--rule); }
+.stat { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.stat b { font-size: 1.5rem; font-family: var(--f-head); font-weight: 800; white-space: nowrap; }
+.stat span { color: var(--sub); font-size: 0.75rem; text-align: right; }
+.sec-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sub); margin: 2px 0 -6px; }
+.list-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.list-row > div { min-width: 0; }
+.list-row .t { font-weight: 700; }
+.list-row .s { font-size: 0.75rem; color: var(--sub); overflow-wrap: anywhere; }
+.btn-sm { padding: 7px 11px; font-size: 0.75rem; width: auto; flex-shrink: 0; }
+.danger-text { color: var(--danger); font: inherit; font-weight: 700; background: none; border: 0; padding: 0; cursor: pointer; }
+.mini-seg { display: flex; border: var(--rule-w) solid var(--rule); border-radius: calc(var(--radius) - 4px); padding: 2px; gap: 2px; }
+.mini-seg button { flex: 1; font: 700 0.75rem var(--f-body); color: var(--sub); background: none; border: 0; padding: 6px 4px; border-radius: calc(var(--radius) - 6px); cursor: pointer; }
+.mini-seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
+
+/* In-mock dialog (stand-in for native <dialog>) */
+.scrim { position: absolute; inset: 0; background: rgb(10 0 20 / 0.55); display: flex; align-items: flex-end; z-index: 4; }
+.scrim[hidden] { display: none !important; }
+.sheet { background: var(--surface); width: 100%; border-radius: 20px 20px 0 0; padding: 18px 16px 26px; display: flex; flex-direction: column; gap: 12px; }
+.dir-b .sheet { border-radius: 0; border-top: 4px solid var(--rule); }
+.sheet h4 { margin: 0; font-family: var(--f-head); font-weight: 800; font-size: 1.05rem; }
+.sheet .acts { display: flex; gap: 8px; }
+.sheet .acts .btn { flex: 1; }
+.desk .scrim { align-items: center; justify-content: center; }
+.desk .sheet { width: 420px; border-radius: var(--radius); padding: 22px; }
+.dir-b .desk .sheet { border: 3px solid var(--rule); }
+
+/* ---------- Desktop browser frame ---------- */
+.desk-scroll { width: 100%; overflow-x: auto; padding-bottom: 6px; }
+.desk-window { min-width: 920px; max-width: 1180px; margin: 0 auto; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; box-shadow: 0 20px 50px -30px rgb(30 10 40 / 0.5); }
+.chrome { background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; padding: 9px 14px; }
+.dots { display: flex; gap: 6px; } .dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+.url { flex: 1; max-width: 420px; background: var(--bg); border-radius: 6px; padding: 4px 12px; font: 12px var(--f-mono); color: var(--muted); }
+.desk { min-height: 600px; display: flex; flex-direction: column; font-size: 14.5px; }
+.desk-nav { display: flex; align-items: center; gap: 22px; padding: 14px 32px; background: var(--surface); border-bottom: var(--rule-w) solid var(--rule); }
+.desk-nav .wordmark { font-size: 1.5rem; margin-right: auto; }
+.navlink { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--sub); padding: 6px 2px; border-bottom: 2px solid transparent; }
+.navlink svg { width: 17px; height: 17px; }
+.navlink.on { color: var(--brand); border-bottom-color: var(--brand); }
+.desk-main { width: 100%; max-width: 1000px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 20px; }
+.desk-main.narrow { max-width: 600px; }
+.desk .h-screen { font-size: 2rem; }
+.desk .lede { font-size: 1rem; margin-top: -10px; }
+.desk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.desk .card { padding: 20px; gap: 14px; }
+.desk .drop { padding: 34px 16px; }
+.desk .label-img { font-size: 13px; padding: 10px 14px; }
+.desk .label-img .lt { font-size: 26px; }
+.desk .label-img .cal { font-size: 19px; }
+.desk .result-head h3 { font-size: 1.25rem; }
+
+/* Desktop sign-in: split brand panel + form */
+.desk-auth { flex-direction: row; min-height: 560px; }
+.auth-brand { flex: 1.1; background: var(--brand); color: var(--brand-ink); padding: 44px 48px; display: flex; flex-direction: column; gap: 22px; }
+.auth-brand .wordmark { color: var(--gold); font-size: 1.7rem; }
+.dir-b .auth-brand .wordmark { color: var(--brand-ink); }
+.auth-brand .h-screen { font-size: 2.4rem; color: var(--brand-ink); margin-top: 40px; }
+.perks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; max-width: 42ch; }
+.perks li { display: flex; gap: 12px; align-items: flex-start; }
+.perks svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--gold); margin-top: 1px; }
+.auth-form { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; }
+.auth-form .card { width: 100%; max-width: 380px; }
+.card-title { margin: 0; font-family: var(--f-head); font-weight: 800; font-size: 1.3rem; }
+
+/* Flow strip */
+.flow { display: flex; flex-direction: column; gap: 8px; margin-top: -16px; }
+.flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 0.85rem; }
+.flow-row i { font-style: normal; color: var(--muted); }
+.flow-tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); width: 7.5rem; }
+.st { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 3px 9px; white-space: nowrap; }
+.st.skip { border-style: dashed; color: var(--muted); background: transparent; text-decoration: line-through; }
+
+/* Archive note */
+.archive-note { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--panel); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+.archive-note p { margin: 0; }
+.archive-note ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
+
+/* Spec section */
+.spec { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px 48px; }
+.spec section { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.spec h2 { font-size: 1.15rem; margin: 0; }
+.spec ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 8px; }
+.spec li { max-width: 68ch; }
+.spec .muted { color: var(--muted); }
+code { font-family: var(--f-mono); font-size: 0.84em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 12px/1.55 var(--f-mono); }
+pre code { background: none; padding: 0; font-size: inherit; }
+.pre-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+ol.decide { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 10px; }
+ol.decide li { max-width: 70ch; }
+.rec { font-size: 0.72rem; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; margin-left: 4px; white-space: nowrap; }
+
+@media (prefers-reduced-motion: no-preference) { .app { transition: background-color .25s, color .25s; } }
+</style>
+</head>
+<body>
+<!-- Icon sprite: one glyph per meaning, reused everywhere -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="salad" viewBox="0 0 160 120"><rect width="160" height="120" fill="#d9c9ae"/><ellipse cx="80" cy="64" rx="58" ry="40" fill="#f8f6f1"/><ellipse cx="80" cy="62" rx="44" ry="29" fill="#7fae4e"/><circle cx="64" cy="55" r="7" fill="#e8d7a8"/><circle cx="92" cy="66" r="6" fill="#e8d7a8"/><circle cx="78" cy="72" r="5" fill="#e8d7a8"/><path d="M58 70 q10 -6 22 0" stroke="#f1e9cf" stroke-width="4" fill="none"/><path d="M84 50 q8 4 16 -2" stroke="#f1e9cf" stroke-width="4" fill="none"/><circle cx="100" cy="54" r="3" fill="#c9a24a"/><circle cx="70" cy="64" r="2.5" fill="#c9a24a"/></symbol>
+</svg>
+
+<div class="wrap" id="root">
+  <header class="intro">
+    <span class="eyebrow">Current design · v3.0.0</span>
+    <h1>Angalia frontend design</h1>
+    <p>The app at phone width and in a desktop browser. Use the toggles to preview dark mode, and to see the alternative direction and old name that were considered. The notes under the mockups record what changed in the code and the decisions made.</p>
+  </header>
+
+  <aside class="archive-note" aria-label="About this page">
+    <p><b>This is the design of the current release, v3.0.0</b>, live on Render and Netlify since 6 October 2026: direction A (Plum &amp; Gold), dark mode and the name Angalia. These mockups were drawn before it was built; details that changed along the way:</p>
+    <ul>
+      <li>Direction B and the Overwatch name were alternatives considered during review; only A and Angalia were built.</li>
+      <li>The Wolfram result sits in a fixed-height scrolling window at full card width ("Click to enlarge").</li>
+      <li>The picked photo has <b>Change photo</b> and <b>Remove</b> buttons; Change photo pulses once a result arrives.</li>
+      <li>On desktop the photo stays in the left card through the whole lookup, and the right card shows "Looks like" and the result.</li>
+      <li>Guests see <b>Create account</b> and <b>Leave guest mode</b> in Settings instead of Sign out.</li>
+      <li>The lookup counts are examples; the real daily allowance is set on the server (5 by default).</li>
+    </ul>
+  </aside>
+
+  <div class="controls">
+    <div><span class="ctl-label">Direction</span>
+      <span class="seg" role="group" aria-label="Visual direction">
+        <button type="button" id="dirA" aria-pressed="true">A · Plum &amp; Gold</button>
+        <button type="button" id="dirB" aria-pressed="false">B · Food Label</button>
+      </span></div>
+    <div><span class="ctl-label">Preview the app in</span>
+      <span class="seg" role="group" aria-label="Preview theme">
+        <button type="button" id="thLight" aria-pressed="true">Light mode</button>
+        <button type="button" id="thDark" aria-pressed="false">Dark mode</button>
+      </span></div>
+    <div><span class="ctl-label">Name</span>
+      <span class="seg" role="group" aria-label="App name">
+        <button type="button" data-name="Overwatch" aria-pressed="false">Overwatch</button>
+        <button type="button" data-name="Angalia" aria-pressed="true">Angalia</button>
+      </span></div>
+  </div>
+  <p class="dir-note" id="dirNote">A keeps today's purple and goldenrod but deepens them into a plum and a gold that hold up in dark mode. Sansita Swashed stays, used only for the wordmark. Figtree replaces Ubuntu for everything else.</p>
+
+  <h2 class="part">On a phone <small>Installed PWA or mobile browser · bottom tabs: Home and Settings</small></h2>
+  <div class="flow" aria-label="Lookup flow">
+    <div class="flow-row"><span class="flow-tag">Photo</span><span class="st">2 · Start</span><i>→</i><span class="st">3 · Photo picked</span><i>→</i><span class="st">4 · Confirm the guess</span><i>→</i><span class="st">5 · Result</span></div>
+    <div class="flow-row"><span class="flow-tag">Text or voice</span><span class="st">2 · Start</span><i>→</i><span class="st skip">3 · skipped</span><i>→</i><span class="st skip">4 · skipped</span><i>→</i><span class="st">5 · Result</span></div>
+  </div>
+  <div class="phones">
+    <!-- 1. Sign in -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span></div>
+        <div class="content">
+          <h3 class="h-screen">What are you eating?</h3>
+          <p class="lede">Sign in to snap your food and get a nutrition breakdown.</p>
+          <div class="card">
+            <div class="field"><label for="m-email">Email</label><input class="input" id="m-email" type="email" value="sam@example.com"></div>
+            <div class="field"><label for="m-pw">Password</label>
+              <div class="input-row"><input class="input" id="m-pw" type="password" value="hunter22">
+                <span class="eye" aria-hidden="true"><svg><use href="#i-eye"/></svg></span></div></div>
+            <button class="btn btn-primary" type="button">Sign in</button>
+            <p class="hint">No account yet? <button class="link" type="button">Sign up</button></p>
+          </div>
+          <div class="or">or</div>
+          <button class="btn btn-ghost" type="button">Continue without an account</button>
+        </div>
+      </div>
+      <figcaption><b>1 · Sign in</b>No tab bar until you're signed in.</figcaption>
+    </figure>
+
+    <!-- 2. Home: start -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span><span class="chip">7 of 10 left today</span></div>
+        <div class="content">
+          <h3 class="h-screen">What are you eating?</h3>
+          <div class="card">
+            <div class="drop">
+              <svg><use href="#i-camera"/></svg>
+              <span class="t">Snap or pick a photo of your food</span>
+              <div class="src-row">
+                <span class="btn btn-primary"><svg><use href="#i-camera"/></svg>Take photo</span>
+                <span class="btn btn-ghost"><svg><use href="#i-image"/></svg>Library</span>
+              </div>
+            </div>
+            <div class="or">or describe it</div>
+            <div class="input-row"><input class="input" id="m-desc" type="text" placeholder="e.g. 2 slices of pepperoni pizza" aria-label="Describe your food">
+              <span class="icon-btn" aria-hidden="true"><svg><use href="#i-mic"/></svg></span></div>
+            <span class="btn btn-gold" aria-disabled="true">Look it up</span>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Mock tabs">
+          <span class="tab on"><svg><use href="#i-home"/></svg>Home</span>
+          <span class="tab"><svg><use href="#i-gear"/></svg>Settings</span>
+        </nav>
+      </div>
+      <figcaption><b>2 · Home: start a lookup</b>Pick a photo to go to step 3. Or type or speak what you ate: speech fills the box so you can fix any mishearing, then "Look it up" goes straight to step 5. That's how it works today.</figcaption>
+    </figure>
+
+    <!-- 3. Home: photo picked -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span><span class="chip">7 of 10 left today</span></div>
+        <div class="content">
+          <h3 class="h-screen">What are you eating?</h3>
+          <div class="card">
+            <div class="photo"><svg role="img" aria-label="Photo of a salad"><use href="#salad"/></svg><span class="swap">Change photo</span></div>
+            <button class="btn btn-primary" type="button">Analyse photo</button>
+            <span class="free">Identifying the photo doesn't use a lookup</span>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Mock tabs">
+          <span class="tab on"><svg><use href="#i-home"/></svg>Home</span>
+          <span class="tab"><svg><use href="#i-gear"/></svg>Settings</span>
+        </nav>
+      </div>
+      <figcaption><b>3 · Home: photo picked</b><em>Photo only.</em> Same as today: the photo shows with an Analyse button, and nothing is sent until you tap it.</figcaption>
+    </figure>
+
+    <!-- 3. Home: confirm detection -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span><span class="chip">7 of 10 left today</span></div>
+        <div class="content">
+          <div class="card">
+            <div class="photo"><svg role="img" aria-label="Photo of a salad"><use href="#salad"/></svg><span class="swap">Change photo</span></div>
+            <div class="guess">
+              <span class="tag-label">Looks like</span>
+              <div class="input-row"><input class="input" id="m-guess" type="text" value="chicken caesar salad" aria-label="Detected food">
+                <span class="icon-btn" aria-hidden="true"><svg><use href="#i-mic"/></svg></span></div>
+              <p class="hint">Not right? Edit it, or add an amount like "2 slices".</p>
+              <button class="btn btn-gold" type="button">Look up nutrition</button>
+              <span class="free">Identifying the photo didn't use a lookup</span>
+            </div>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Mock tabs">
+          <span class="tab on"><svg><use href="#i-home"/></svg>Home</span>
+          <span class="tab"><svg><use href="#i-gear"/></svg>Settings</span>
+        </nav>
+      </div>
+      <figcaption><b>4 · Home: confirm the guess</b><em>Photo only.</em> The only action on screen is "Look up nutrition", which uses one of the day's lookups.</figcaption>
+    </figure>
+
+    <!-- 4. Home: result -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span><span class="chip">6 of 10 left today</span></div>
+        <div class="content">
+          <div class="card">
+            <div class="result-head"><h3>Chicken caesar salad</h3><span>Tap to enlarge</span></div>
+            <div class="label-img" role="img" aria-label="Nutrition facts for chicken caesar salad">
+              <div class="lt">Nutrition Facts</div>
+              <div class="row thick"><span>Serving size 1 bowl (230 g)</span></div>
+              <div class="row"><span class="cal">Calories</span><span class="cal">390</span></div>
+              <div class="row"><span><b>Total fat</b> 26 g</span><span>33%</span></div>
+              <div class="row ind"><span>Saturated fat 6 g</span><span>30%</span></div>
+              <div class="row"><span><b>Cholesterol</b> 85 mg</span><span>28%</span></div>
+              <div class="row"><span><b>Sodium</b> 890 mg</span><span>39%</span></div>
+              <div class="row"><span><b>Total carbohydrate</b> 11 g</span><span>4%</span></div>
+              <div class="row last"><span><b>Protein</b> 29 g</span><span></span></div>
+            </div>
+          </div>
+          <span class="btn btn-ghost"><svg><use href="#i-plus"/></svg>New lookup</span>
+        </div>
+        <nav class="tabs" aria-label="Mock tabs">
+          <span class="tab on"><svg><use href="#i-home"/></svg>Home</span>
+          <span class="tab"><svg><use href="#i-gear"/></svg>Settings</span>
+        </nav>
+      </div>
+      <figcaption><b>5 · Home: result</b>Both paths end here. "New lookup" clears the result and goes back to step 2. The Home tab only switches tabs, so a trip to Settings and back keeps this result on screen.</figcaption>
+    </figure>
+
+    <!-- 5. Settings + App ID dialog -->
+    <figure>
+      <div class="app phone">
+        <div class="notch"></div>
+        <div class="topbar"><span class="wordmark">Angalia</span></div>
+        <div class="content">
+          <h3 class="h-screen">Settings</h3>
+          <span class="sec-title">Lookups</span>
+          <div class="card">
+            <div class="stat"><b>7 of 10</b><span>free today · resets at midnight</span></div>
+            <div class="meter"><i></i></div>
+            <div class="list-row">
+              <div><div class="t">Wolfram Alpha App ID</div><div class="s">Add your own for unlimited lookups</div></div>
+              <button class="btn btn-primary btn-sm" type="button" data-open="sheetPhone">Add</button>
+            </div>
+          </div>
+          <span class="sec-title">Appearance</span>
+          <div class="card">
+            <div class="mini-seg" role="group" aria-label="Appearance">
+              <button type="button" data-appearance="system" aria-pressed="true">System</button>
+              <button type="button" data-appearance="light" aria-pressed="false">Light</button>
+              <button type="button" data-appearance="dark" aria-pressed="false">Dark</button>
+            </div>
+          </div>
+          <span class="sec-title">Account</span>
+          <div class="card">
+            <div class="list-row"><div><div class="t">Signed in</div><div class="s">sam@example.com</div></div>
+              <button class="danger-text" type="button">Sign out</button></div>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Mock tabs">
+          <span class="tab"><svg><use href="#i-home"/></svg>Home</span>
+          <span class="tab on"><svg><use href="#i-gear"/></svg>Settings</span>
+        </nav>
+        <div class="scrim" id="sheetPhone" hidden>
+          <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetPhoneTitle">
+            <h4 id="sheetPhoneTitle">Your Wolfram Alpha App ID</h4>
+            <div class="field"><label for="m-appid">App ID</label><input class="input" id="m-appid" type="text" placeholder="XXXXXX-XXXXXXXXXX"></div>
+            <p class="hint">Get a free one at <a class="link" href="https://developer.wolframalpha.com/" target="_blank" rel="noreferrer">developer.wolframalpha.com<svg><use href="#i-ext"/></svg></a>. It's saved to your account, not this device.</p>
+            <div class="acts"><button class="btn btn-ghost" type="button" data-close="sheetPhone">Cancel</button><button class="btn btn-primary" type="button">Save</button></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>6 · Settings</b>Light and dark mode live here under Appearance; try them. "Add" opens the App ID dialog, and its Wolfram link opens in a new tab.</figcaption>
+    </figure>
+  </div>
+
+  <h2 class="part">On desktop <small>Browser at 1280px · split sign-in screen, tabs move to the top bar, the lookup and its result sit side by side</small></h2>
+
+  <figure class="desk-fig">
+    <div class="desk-scroll">
+      <div class="desk-window">
+        <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url"><span class="host">angalia</span>.app/sign-in</span></div>
+        <div class="app desk desk-auth">
+          <div class="auth-brand">
+            <span class="wordmark">Angalia</span>
+            <h3 class="h-screen">What are you eating?</h3>
+            <ul class="perks">
+              <li><svg><use href="#i-camera"/></svg><span>Snap a photo and we identify the food. That part is free.</span></li>
+              <li><svg><use href="#i-mic"/></svg><span>No photo? Type or say what you ate, like "2 slices of pepperoni pizza".</span></li>
+              <li><svg><use href="#i-check"/></svg><span>Get the nutrition facts: 10 free lookups a day, or unlimited with your own Wolfram Alpha App ID.</span></li>
+            </ul>
+          </div>
+          <div class="auth-form">
+            <div class="card">
+              <h4 class="card-title">Sign in</h4>
+              <div class="field"><label for="d-email">Email</label><input class="input" id="d-email" type="email" value="sam@example.com"></div>
+              <div class="field"><label for="d-pw">Password</label>
+                <div class="input-row"><input class="input" id="d-pw" type="password" value="hunter22">
+                  <span class="eye" aria-hidden="true"><svg><use href="#i-eye"/></svg></span></div></div>
+              <button class="btn btn-primary" type="button">Sign in</button>
+              <p class="hint">No account yet? <button class="link" type="button">Sign up</button></p>
+              <div class="or">or</div>
+              <button class="btn btn-ghost" type="button">Continue without an account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Desktop · Sign in</b>A split screen: what the app does on the left, the form on the right. There's no top nav until you're signed in. Below about 900px it collapses into the phone sign-in screen.</figcaption>
+  </figure>
+
+  <figure class="desk-fig">
+    <div class="desk-scroll">
+      <div class="desk-window">
+        <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url"><span class="host">angalia</span>.app</span></div>
+        <div class="app desk">
+          <nav class="desk-nav">
+            <span class="wordmark">Angalia</span>
+            <span class="navlink on"><svg><use href="#i-home"/></svg>Home</span>
+            <span class="navlink"><svg><use href="#i-gear"/></svg>Settings</span>
+            <span class="chip">6 of 10 left today</span>
+          </nav>
+          <div class="desk-main">
+            <h3 class="h-screen">What are you eating?</h3>
+            <p class="lede">Drop in a photo or describe your meal to get its nutrition facts.</p>
+            <div class="desk-grid">
+              <div class="card">
+                <div class="drop">
+                  <svg><use href="#i-upload"/></svg>
+                  <span class="t">Drag a photo here</span>
+                  <span>or</span>
+                  <span class="btn btn-primary" style="width:auto"><svg><use href="#i-image"/></svg>Choose a photo</span>
+                </div>
+                <div class="or">or describe it</div>
+                <div class="input-row"><input class="input" id="d-desc" type="text" placeholder="e.g. 2 slices of pepperoni pizza" aria-label="Describe your food">
+                  <span class="icon-btn" aria-hidden="true"><svg><use href="#i-mic"/></svg></span></div>
+                <span class="btn btn-gold" aria-disabled="true">Look it up</span>
+              </div>
+              <div class="card">
+                <div class="result-head"><h3>Chicken caesar salad</h3><span>Click to enlarge</span></div>
+                <div class="label-img" role="img" aria-label="Nutrition facts for chicken caesar salad">
+                  <div class="lt">Nutrition Facts</div>
+                  <div class="row thick"><span>Serving size 1 bowl (230 g)</span></div>
+                  <div class="row"><span class="cal">Calories</span><span class="cal">390</span></div>
+                  <div class="row"><span><b>Total fat</b> 26 g</span><span>33%</span></div>
+                  <div class="row ind"><span>Saturated fat 6 g</span><span>30%</span></div>
+                  <div class="row"><span><b>Cholesterol</b> 85 mg</span><span>28%</span></div>
+                  <div class="row"><span><b>Sodium</b> 890 mg</span><span>39%</span></div>
+                  <div class="row"><span><b>Total carbohydrate</b> 11 g</span><span>4%</span></div>
+                  <div class="row last"><span><b>Protein</b> 29 g</span><span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Desktop · Home</b>The left card is always ready for the next lookup and the right card shows the current step (the picked photo with Analyse, then the "Looks like" check, then the result), so there's no "New lookup" button. Desktop has no "Take photo" button, matching today's mobile-only check, and gains drag-and-drop.</figcaption>
+  </figure>
+
+  <figure class="desk-fig">
+    <div class="desk-scroll">
+      <div class="desk-window">
+        <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url"><span class="host">angalia</span>.app/settings</span></div>
+        <div class="app desk">
+          <nav class="desk-nav">
+            <span class="wordmark">Angalia</span>
+            <span class="navlink"><svg><use href="#i-home"/></svg>Home</span>
+            <span class="navlink on"><svg><use href="#i-gear"/></svg>Settings</span>
+            <span class="chip">7 of 10 left today</span>
+          </nav>
+          <div class="desk-main narrow">
+            <h3 class="h-screen">Settings</h3>
+            <span class="sec-title">Lookups</span>
+            <div class="card">
+              <div class="stat"><b>7 of 10</b><span>free today · resets at midnight</span></div>
+              <div class="meter"><i></i></div>
+              <div class="list-row">
+                <div><div class="t">Wolfram Alpha App ID</div><div class="s">Add your own for unlimited lookups</div></div>
+                <button class="btn btn-primary btn-sm" type="button" data-open="sheetDesk">Add App ID</button>
+              </div>
+            </div>
+            <span class="sec-title">Appearance</span>
+            <div class="card">
+              <div class="mini-seg" role="group" aria-label="Appearance">
+                <button type="button" data-appearance="system" aria-pressed="true">System</button>
+                <button type="button" data-appearance="light" aria-pressed="false">Light</button>
+                <button type="button" data-appearance="dark" aria-pressed="false">Dark</button>
+              </div>
+            </div>
+            <span class="sec-title">Account</span>
+            <div class="card">
+              <div class="list-row"><div><div class="t">Signed in</div><div class="s">sam@example.com</div></div>
+                <button class="danger-text" type="button">Sign out</button></div>
+            </div>
+          </div>
+          <div class="scrim" id="sheetDesk">
+            <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetDeskTitle">
+              <h4 id="sheetDeskTitle">Your Wolfram Alpha App ID</h4>
+              <div class="field"><label for="d-appid">App ID</label><input class="input" id="d-appid" type="text" placeholder="XXXXXX-XXXXXXXXXX"></div>
+              <p class="hint">Get a free one at <a class="link" href="https://developer.wolframalpha.com/" target="_blank" rel="noreferrer">developer.wolframalpha.com<svg><use href="#i-ext"/></svg></a>. It's saved to your account, not this device.</p>
+              <div class="acts"><button class="btn btn-ghost" type="button" data-close="sheetDesk">Cancel</button><button class="btn btn-primary" type="button">Save</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Desktop · Settings with the App ID dialog open</b>On desktop the dialog is centred instead of sliding up from the bottom. Cancel closes it and "Add App ID" reopens it. The link opens Wolfram's site in a new tab.</figcaption>
+  </figure>
+
+  <div class="spec">
+    <section>
+      <h2>What changes in the code</h2>
+      <ul>
+        <li><b>Tailwind v4 via <code>@tailwindcss/vite</code>.</b> The 400-line <code>index.css</code> becomes about 40 lines of <code>@theme</code> tokens. Its specificity workarounds, like <code>.wrapper form button.photo-source-button</code>, disappear because styles live on each element.</li>
+        <li><b>One layout, two breakpoints.</b> A single column on phones becomes two columns from about 900px (Tailwind's <code>lg:</code>). The bottom tab bar becomes the top nav on the same breakpoint, so they're one component.</li>
+        <li><b>Same flow, clearer screens.</b> Pick a photo, tap Analyse, confirm the guess, then see the result, exactly as today. Phones show one step at a time. Desktop keeps the input and the current step side by side. The only change to the button is its label, from "Analyse My Nutrition!!" to "Analyse photo".</li>
+        <li><b>Settings tab.</b> It holds the usage meter, the App ID dialog, Appearance (System / Light / Dark, remembered on the device) and Sign out. The "See Settings below" error becomes a link to the tab.</li>
+        <li><b>Real external link.</b> The Wolfram link uses <code>target="_blank" rel="noreferrer"</code>. In a browser it opens a new tab. In the installed app, Android and desktop open it in the default browser, and on iOS it opens an in-app Safari sheet.</li>
+        <li><b>Native <code>&lt;dialog&gt;</code> for the enlarged result and the App ID form.</b> This gives focus trapping, Escape to close and <code>aria-modal</code> without a library.</li>
+        <li><b>Inline spinner.</b> It replaces the loader GIF fetched from <code>s3.amazonaws.com/static.mlh.io</code>.</li>
+        <li><b>Tests.</b> They query by role, text and <code>input[type="file"]</code>, not by class. The test that clicks "Analyse" only needs its button name updated.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>What a component looks like</h2>
+      <span class="pre-label">Today · index.css + JSX</span>
+<pre><code>.wrapper form button.photo-source-button {
+  display: inline-flex; gap: 0.35rem;
+  border: 2px solid darkslateblue; border-radius: 20px;
+  background: white; color: darkslateblue; ...
+}
+&lt;button className="photo-source-button"&gt;</code></pre>
+      <span class="pre-label">After · tokens once, utilities in JSX</span>
+<pre><code>/* index.css */
+@import "tailwindcss";
+@theme { --color-brand: var(--brand); --color-gold: var(--gold); ... }
+
+&lt;button className="flex-1 inline-flex items-center justify-center gap-1.5
+  rounded-xl border border-rule px-3 py-2 text-sm font-semibold
+  hover:bg-brand hover:text-brand-ink"&gt;</code></pre>
+      <p class="muted">Repeated pieces like buttons, cards and fields become small components (<code>&lt;Button variant="primary"&gt;</code>) so the utility strings aren't copied around.</p>
+    </section>
+
+    <section>
+      <h2>Decisions</h2>
+      <ol class="decide">
+        <li><b>Direction:</b> A, Plum &amp; Gold.</li>
+        <li><b>Dark mode:</b> shipped in v3.0.0, with System / Light / Dark under Settings → Appearance.</li>
+        <li><b>UI kit (shadcn/ui, Radix):</b> skipped. The browser's built-in <code>&lt;dialog&gt;</code> handles the app's pop-ups.</li>
+        <li><b>Name:</b> Angalia, replacing Overwatch and GrubWatch.</li>
+        <li><b>Lookup flow:</b> unchanged from before the redesign. A photo needs Analyse, then the "Looks like" check; typed or spoken text goes straight to the result.</li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('root');
+  var note = document.getElementById('dirNote');
+  var notes = {
+    a: "A keeps today's purple and goldenrod but deepens them into a plum and a gold that hold up in dark mode. Sansita Swashed stays, used only for the wordmark. Figtree replaces Ubuntu for everything else.",
+    b: "B takes its cue from the FDA nutrition label: black on white, heavy rules, tight corners and Libre Franklin at black weight. Goldenrod survives as a yolk-yellow highlight for the usage chip and the main action."
+  };
+  function press(on, offs) { on.setAttribute('aria-pressed', 'true'); offs.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); }); }
+  var dirA = document.getElementById('dirA'), dirB = document.getElementById('dirB');
+  var thL = document.getElementById('thLight'), thD = document.getElementById('thDark');
+  var appearanceBtns = Array.prototype.slice.call(document.querySelectorAll('[data-appearance]'));
+
+  function setDark(dark, source) {
+    root.classList.toggle('mock-dark', dark);
+    press(dark ? thD : thL, [dark ? thL : thD]);
+    if (source !== 'appearance') {
+      appearanceBtns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.appearance === (dark ? 'dark' : 'light') ? 'true' : 'false'); });
+    }
+  }
+  dirA.onclick = function () { root.classList.remove('dir-b'); press(dirA, [dirB]); note.textContent = notes.a; };
+  dirB.onclick = function () { root.classList.add('dir-b'); press(dirB, [dirA]); note.textContent = notes.b; };
+  thL.onclick = function () { setDark(false); };
+  thD.onclick = function () { setDark(true); };
+
+  appearanceBtns.forEach(function (btn) {
+    btn.onclick = function () {
+      var mode = btn.dataset.appearance;
+      appearanceBtns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.appearance === mode ? 'true' : 'false'); });
+      var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setDark(dark, 'appearance');
+    };
+  });
+
+  var nameBtns = Array.prototype.slice.call(document.querySelectorAll('[data-name]'));
+  nameBtns.forEach(function (btn) {
+    btn.onclick = function () {
+      var name = btn.dataset.name;
+      press(btn, nameBtns.filter(function (b) { return b !== btn; }));
+      document.querySelectorAll('.wordmark').forEach(function (w) { w.textContent = name; });
+      document.querySelectorAll('.host').forEach(function (h) { h.textContent = name.toLowerCase(); });
+    };
+  });
+
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { document.getElementById(b.dataset.open).hidden = false; }; });
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { document.getElementById(b.dataset.close).hidden = true; }; });
+})();
+</script>
+</body>
+</html>
