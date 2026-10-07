@@ -148,10 +148,6 @@ describe('POST /api/detect-food-text', () => {
     outside = async () => Response.json({ error: { code: 503 } }, { status: 503 });
     assert.equal((await describeFood('a cheeseburger')).status, 502);
   });
-
-  test('requires a session token', async () => {
-    assert.equal((await describeFood('a cheeseburger', { user: null })).status, 401);
-  });
 });
 
 // Only the checks that run before Whisper is loaded - the model itself is too big to load in a
@@ -167,10 +163,6 @@ describe('POST /api/transcribe', () => {
 
     assert.equal(response.status, 413);
     assert.match((await response.json()).error, /20 seconds/);
-  });
-
-  test('requires a session token', async () => {
-    assert.equal((await sendAudio(new Float32Array(16000), { user: null })).status, 401);
   });
 });
 
@@ -329,9 +321,21 @@ describe('user-facing error messages', () => {
   });
 
   describe('sign-in checks', () => {
-    test('no session token', async () => {
-      await assertFriendlyError(await call('/api/wolfram-usage', { user: null }), 401);
-    });
+    // Every route shares requireAuth; this catches one being added or reordered without it.
+    const ROUTES = [
+      ['POST', '/api/detect-food'],
+      ['POST', '/api/detect-food-text'],
+      ['POST', '/api/transcribe'],
+      ['GET', '/api/nutrition-image'],
+      ['GET', '/api/wolfram-usage'],
+      ['POST', '/api/wolfram-key'],
+      ['DELETE', '/api/wolfram-key'],
+    ];
+    for (const [method, path] of ROUTES) {
+      test(`no session token: ${method} ${path}`, async () => {
+        await assertFriendlyError(await call(path, { method, user: null }), 401);
+      });
+    }
 
     test('Supabase unreachable while checking the session', async () => {
       supabaseAdmin.auth.getUser = async () => {
